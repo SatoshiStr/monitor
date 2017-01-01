@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div>
+    <table class="table table-bordered table-hover table-striped">
+        <thead>
+        <tr>
+            <th>id</th>
+            <th>主机IP</th>
+            <th>主机名</th>
+            <th>SSH用户名</th>
+            <th>SSH密码</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for host in hosts %}
+        <tr>
+            <td>{{ host.id }}</td>
+            <td>{{ host.ip }}{{ ' (本机)' if host.is_monitor_host() else '' }}</td>
+            <td>{{ host.hostname }}</td>
+            <td>{{ host.username }}</td>
+            <td>{{ host.password }}</td>
+            <td>{{ host.state }}</td>
+            <td>
+                <button type="button" class="btn btn-primary btn-sm config_host">开始配置主机</button>
+                <button type="button" class="btn btn-success btn-sm show_service_modal">监控项目</button>
+                <input type="hidden" value="{{ '%s;%s' % (host.selected_service_names,
+                                                          host.left_service_names) }}">
+                <input type="hidden" value="{{ host.id }}">
+                <button type="button" class="btn btn-danger btn-sm remove_host">删除主机</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="col-md-offset-5 col-md-2 text-center">
+    <button type="button" class="btn btn-info" id="add_host">添加主机</button>
+</div>
+{% endblock %}
+
+
+{% block footer %}
+<div class="modal fade" id="service_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="service_modal_title">监控项目</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form" id="service_form">
+                </form>
+                <input type="hidden" id="service_host_id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="service_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="service_modal_submit">提交更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="host_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" id="host_modal_close">&times;</button>
+                <h4 class="modal-title">添加主机</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form" method="post" action="{{ url_for('main.add_host') }}">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">主机IP</label>
+                        <div class="col-sm-8">
+                            {{ host_form.ip(class='form-control', required='') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">主机名</label>
+                        <div class="col-sm-8">
+                            {{ host_form.hostname(class='form-control', required='') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">SSH用户名</label>
+                        <div class="col-sm-8">
+                            {{ host_form.username(class='form-control', required='') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">SSH密码</label>
+                        <div class="col-sm-8">
+                            {{ host_form.password(class='form-control') }}
+                        </div>
+                    </div>
+                    {{ host_form.csrf_token(type='hidden') }}
+                    <div class="form-group">
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-info"> 添加主机 </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer_scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/root.js') }}"></script>
+{% endblock %}
