@@ -10,7 +10,7 @@ COPY install_grafana.sh /root/
 RUN /bin/bash /root/install_grafana.sh
 
 # copy monitor config system
-COPY monitor /root/
+COPY monitor /root/monitor
 COPY setup_monitor_config_system.sh /root/
 RUN /bin/bash /root/setup_monitor_config_system.sh
 

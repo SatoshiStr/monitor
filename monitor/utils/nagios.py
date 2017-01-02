@@ -1,7 +1,7 @@
 # coding=utf-8
 
-CONFIG_FILE_PREFIX = './'
-# CONFIG_FILE_PREFIX = '/etc/nagios3/conf.d/'
+# CONFIG_FILE_PREFIX = './'
+CONFIG_FILE_PREFIX = '/etc/nagios3/conf.d/'
 HOST_CONFIG_FILE = 'hosts.cfg'
 SERVICE_CONFIG_FILE = 'services.cfg'
 COMMAND_CONFIG_FILE = 'commands.cfg'
