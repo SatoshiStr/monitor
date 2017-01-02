@@ -24,7 +24,7 @@ class CreateTimeMixin(object):
 
 class Host(IdMixin, CreateTimeMixin, Model):
     ip = db.Column(db.String(15), nullable=False, unique=True)
-    hostname = db.Column(db.String(50), nullable=False)
+    hostname = db.Column(db.String(50), nullable=False, unique=True)
     username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(50), nullable=True, default=None)
     state = db.Column(db.Enum(u'新加入', u'配置中', u'配置完成', u'配置失败'),
@@ -64,7 +64,24 @@ class Service(IdMixin, Model):
     openstack_service_range = {u'虚拟机内存', u'虚拟机CPU使用率'}
     service_range = {u'内存', u'CPU负载', u'网卡使用率'}
     service_range.update(openstack_service_range)
+
+    commands = {
+        u'虚拟机内存': ('check_vm_mem', 'vm.cpu'),
+        u'虚拟机CPU使用率': ('check_vm_cpu', 'vm.memory'),
+        u'内存': ('check_mem', 'physical.memory'),
+        u'CPU负载': ('check_cpu', 'physical.cpu'),
+        u'网卡使用率': ('check_if', 'physical.interface')
+    }
+
     name = db.Column(db.String(50), nullable=False, unique=True)
+
+    @property
+    def command(self):
+        return Service.commands[self.name][0]
+
+    @property
+    def prefix(self):
+        return Service.commands[self.name][1]
 
     @staticmethod
     def get_all(include_openstack=False):

@@ -1,0 +1,5 @@
+nrpe_config: "templates/nrpe.cfg"
+nrpe_dest: "/etc/nagios/nrpe.cfg"
+
+nagios_ip: "10.10.1.81"
+dec_str: "hi, a dec str"

@@ -1,0 +1,23 @@
+---
+- hosts:
+    monitor_target
+  sudo: true
+  tasks:
+    - name: install nrpe-server
+      apt:
+        name: nagios-nrpe-server
+        update_cache: yes
+
+    - name: install nagios-plugin
+      apt:
+        name: nagios-plugins
+
+    - name: change nrpe config
+      template:
+        src: "{{ nrpe_config }}"
+        dest: "{{ nrpe_dest }}"
+
+    - name: restart nrpe server
+      service:
+        name: nagios-nrpe-server
+        state: restarted
