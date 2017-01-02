@@ -22,9 +22,11 @@
             <td>{{ host.hostname }}</td>
             <td>{{ host.username }}</td>
             <td>{{ host.password }}</td>
-            <td>{{ host.state }}</td>
+            <td class="">{{ host.state }}{%- if host.state in ('配置完成', '配置失败') -%}
+                <button type="button" class="btn btn-default btn-sm config_detail">查看详细</button>
+            {%- endif %}</td>
             <td>
-                <button type="button" class="btn btn-primary btn-sm config_host">开始配置主机</button>
+                <button type="button" class="btn btn-primary btn-sm config_host">配置主机</button>
                 <button type="button" class="btn btn-success btn-sm show_service_modal">监控项目</button>
                 <input type="hidden" value="{{ '%s;%s' % (host.selected_service_names,
                                                           host.left_service_names) }}">
@@ -105,9 +107,31 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="config_modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Ansible 输出</h4>
+            </div>
+            <div class="modal-body" >
+                <pre id="config_stdout">
+
+                </pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="config_modal_close">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block footer_scripts %}
     {{ super() }}
     <script src="{{ url_for('static', filename='js/root.js') }}"></script>
+    <style>
+        .config_detail {
+            margin-left: 7px;
+        }
+    </style>
 {% endblock %}

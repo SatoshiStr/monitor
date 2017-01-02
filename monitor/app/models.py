@@ -29,6 +29,7 @@ class Host(IdMixin, CreateTimeMixin, Model):
     password = db.Column(db.String(50), nullable=True, default=None)
     state = db.Column(db.Enum(u'新加入', u'配置中', u'配置完成', u'配置失败'),
                       nullable=False, default=u'新加入')
+    latest_task_name = db.Column(db.String(50))
 
     services = db.relationship('Service', secondary='host_service_map',
                                backref=db.backref('hosts', lazy='dynamic'),

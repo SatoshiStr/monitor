@@ -111,3 +111,27 @@ $('.config_host').click(function() {
         }
     });
 });
+
+$('.config_detail').click(function() {
+    var host_id = $($(this).parent().parent().children('td')[0]).text();
+    $.ajax({
+        type: 'GET',
+        url: "/host/"+host_id+"/config-detail",
+        data: null,
+        contentType: 'application/json; charset=UTF-8',
+        dataType: 'json',
+        success: function (data) {
+            $('#config_stdout').text(data['stdout']);
+            $('#config_modal').modal('show');
+        },
+        error: function (xhr, type) {
+            console.log("提交数据失败！");
+            console.log(xhr);
+            console.log(type);
+        }
+    });
+});
+
+$('#config_modal_close').click(function() {
+    $('#config_modal').modal('hide');
+});

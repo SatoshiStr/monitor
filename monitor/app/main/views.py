@@ -1,8 +1,8 @@
 # coding=utf-8
 import logging
 from sqlalchemy import or_
-from flask import render_template, flash, redirect, url_for, request
-from utils import nagios
+from flask import render_template, flash, redirect, url_for, request, jsonify
+from utils import nagios, ansible
 from app.models import Host, Service
 from . import main
 from .forms import HostForm, ServiceForm
@@ -72,3 +72,22 @@ def add_service(host_id):
                            service.prefix)
     host.save()
     return '{}'
+
+
+@main.route('/host/<int:host_id>/config', methods=['POST'])
+def config_host(host_id):
+    host = Host.query.get_or_404(host_id)
+    task_name = ansible.AnsibleTask.create(host)
+    host.latest_task_name = task_name
+    host.state = u'配置中'
+    host.save()
+    print host.latest_task_name
+    return '{}'
+
+
+@main.route('/host/<int:host_id>/config-detail', methods=['GET'])
+def get_config_detail(host_id):
+    host = Host.query.get_or_404(host_id)
+    with open(ansible.TASK_DIR+'/'+host.latest_task_name) as f:
+        content = f.read().encode('utf-8')
+    return jsonify({'stdout': content})
