@@ -1,2 +1,2 @@
 [monitor_target]
-172.18.229.252 ansible_ssh_user=hadark ansible_ssh_pass=
+172.18.229.252 ansible_ssh_user=hadark ansible_ssh_pass=admin123 ansible_become_pass=admin123

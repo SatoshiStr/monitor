@@ -35,7 +35,8 @@ class AnsibleTask(threading.Thread):
     def create(host):
         template = (u'[monitor_target]\n'
                     u'%(ip)s ansible_ssh_user=%(ssh_user)s '
-                    u'ansible_ssh_pass=%(ssh_pass)s \n')
+                    u'ansible_ssh_pass=%(ssh_pass)s '
+                    u'ansible_become_pass=%(ssh_pass)s\n')
         with open('tools/ansible/hosts', 'w') as f:
             content = template % {
                 'ip': host.ip,
