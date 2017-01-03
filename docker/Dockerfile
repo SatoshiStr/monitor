@@ -21,8 +21,6 @@ RUN /bin/bash /root/install_grafana.sh
 
 RUN apt-get install -y python-setuptools libmysqlclient-dev python-mysqldb vim && easy_install pip
  
-# copy monitor config system
-COPY monitor /root/monitor
 COPY setup_monitor_config_system.sh /root/
 RUN /bin/bash /root/setup_monitor_config_system.sh
 

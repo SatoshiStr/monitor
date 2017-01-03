@@ -2,8 +2,6 @@
 set -e
 set -x
 
-pip install -r /root/monitor/requirements.txt
-
 # install ansible 1.96
 apt-get install -y software-properties-common
 apt-add-repository ppa:ansible/ansible-1.9
@@ -20,13 +18,5 @@ EOF
 
 ## change mysql charset
 apt-get install -y crudini
+touch /etc/mysql/conf.d/a.cnf
 crudini --set /etc/mysql/conf.d/a.cnf mysqld character-set-server utf8
-/etc/init.d/mysql restart
-
-mysql -uroot -padmin123 <<EOF
-create database monitor;
-EOF
-
-cd /root/monitor/
-python manage.py db upgrade
-

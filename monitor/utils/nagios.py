@@ -1,10 +1,11 @@
 # coding=utf-8
+from subprocess import Popen, PIPE
 
 # CONFIG_FILE_PREFIX = './'
 CONFIG_FILE_PREFIX = '/etc/nagios3/conf.d/'
-HOST_CONFIG_FILE = 'hosts.cfg'
-SERVICE_CONFIG_FILE = 'services.cfg'
-COMMAND_CONFIG_FILE = 'commands.cfg'
+HOST_CONFIG_FILE = CONFIG_FILE_PREFIX+'hosts.cfg'
+SERVICE_CONFIG_FILE = CONFIG_FILE_PREFIX+'services.cfg'
+COMMAND_CONFIG_FILE = CONFIG_FILE_PREFIX+'commands.cfg'
 
 
 def add_host(host_name, ip):
@@ -66,6 +67,7 @@ def add_config(name, config, file_name, overwrite=False):
     result = config_template % {'name': name, 'content': u'\n    '.join(content)}
     with open(file_name, 'a' if not overwrite else 'w') as f:
         f.write(result.encode('utf-8'))
+    popen = Popen(['/etc/init.d/nagios3', 'restart'])
 
 
 def remove_config(file_name, criteria):
@@ -96,6 +98,7 @@ def remove_config(file_name, criteria):
         # clear file
         with open(file_name, 'w') as f:
             f.write('')
+    popen = Popen(['/etc/init.d/nagios3', 'restart'])
 
 
 if __name__ == '__main__':
