@@ -20,9 +20,10 @@ class AnsibleTask(threading.Thread):
         self.host_ids = host_ids
         self.inventory = inventory
         self.command = ['ansible-playbook', 'tools/ansible/playbook.yml',
-                        '-i', self.inventory].extend(args)
+                        '-i', self.inventory] + args
 
     def run(self):
+        print self.command
         popen = Popen(self.command, stdout=PIPE)
         stdout = popen.stdout.read()
         ret_code = popen.wait()
@@ -36,12 +37,13 @@ class AnsibleTask(threading.Thread):
         from app import create_app
         from app.models import Host
         with create_app().app_context():
-            host = Host.query.get(self.host_id)
-            if ret_code == 0:
-                host.state = u'配置完成'
-            else:
-                host.state = u'配置失败'
-            host.save()
+            for host_id in self.host_ids:
+                host = Host.query.get(host_id)
+                if ret_code == 0:
+                    host.state = u'配置完成'
+                else:
+                    host.state = u'配置失败'
+                host.save()
 
 
 def make_inventory(hosts):

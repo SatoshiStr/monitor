@@ -41,12 +41,160 @@
     </table>
 </div>
 <div>
-    <div class="col-md-2 text-center">
+    <div class="col-md-offset-3 col-md-6 text-center">
         <button type="button" class="btn btn-info" id="add_multiple_host">批量添加主机</button>
-    </div>
-    <div class="col-md-2 text-center">
         <button type="button" class="btn btn-info" id="config_all_host">配置所有主机</button>
+        <button type="button" class="btn btn-info" id="show_group_service">主机组服务</button>
+        <button type="button" class="btn btn-info" id="sync">同步配置到Nagios</button>
     </div>
 </div>
+{% endblock %}
 
+{% block footer %}
+<div class="modal fade" id="multi_host_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" id="multi_host_modal_close">&times;</button>
+                <h4 class="modal-title">批量添加主机</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form" method="post" action="
+                {{- url_for('main.create_hosts_at_group', group_id=group.id) }}">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">主机IP范围</label>
+                        <div class="col-sm-4">
+                            {{ form.ip_prefix(class='form-control', required='',
+                                    placeholder='10.10.1') }}
+                        </div>
+                        <div class="col-sm-2">
+                            {{ form.ip_start(class='form-control', required='',
+                                    placeholder='100') }}
+                        </div>
+                        <div class="col-sm-2">
+                            {{ form.ip_end(class='form-control', required='',
+                                    placeholder='150') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">主机名</label>
+                        <div class="col-sm-8">
+                            {{ form.hostname(class='form-control', required='') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">SSH用户名</label>
+                        <div class="col-sm-8">
+                            {{ form.username(class='form-control', required='') }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">SSH密码</label>
+                        <div class="col-sm-8">
+                            {{ form.password(class='form-control') }}
+                        </div>
+                    </div>
+                    {{ form.csrf_token(type='hidden') }}
+                    <div class="form-group">
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-info"> 添加主机 </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="move_group_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">把主机移动到主机组</h4>
+            </div>
+            <div class="modal-body" id="group_selector">
+                <div class="radio">
+                    <label>
+                        <input type="radio" name="optionsRadios" value="option1">
+                        移出主机组
+                    </label>
+                </div>
+                {% for grp in group_list %}
+                    {% if grp.id != group.id %}
+                <div class="radio">
+                    <label>
+                        <input type="radio" name="optionsRadios" value="option1">
+                        移到主机组{{ grp.name }}
+                    </label>
+                </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <input type="hidden" value="" id="move_group_modal_host_id">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="move_group_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="move_group_modal_commit">提交更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="group_service_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">监控项目</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form" id="group_service_form">
+                    {% for service in selected_services %}
+                    <div class="checkbox">
+                        <label class="monitor_item_name">
+                            <input type="checkbox" checked>
+                            {{ service.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                    {% for service in left_services %}
+                    <div class="checkbox">
+                        <label class="monitor_item_name">
+                            <input type="checkbox">
+                            {{ service.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </form>
+                <input type="hidden" id="service_group_id" value="{{ group.id }}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="group_service_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="group_service_modal_submit">提交更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="config_modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Ansible 输出</h4>
+            </div>
+            <div class="modal-body" >
+                <pre id="config_stdout">
+
+                </pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="config_modal_close">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block footer_scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/root.js') }}"></script>
+    <style>
+        .config_detail {
+            margin-left: 7px;
+        }
+    </style>
 {% endblock %}

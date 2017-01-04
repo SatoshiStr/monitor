@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<h3>单独主机</h3>
 <div>
     <table class="table table-bordered table-hover table-striped">
         <thead>
@@ -38,8 +39,9 @@
         </tbody>
     </table>
 </div>
-<div class="col-md-offset-5 col-md-2 text-center">
+<div class="col-md-offset-4 col-md-3 text-center">
     <button type="button" class="btn btn-info" id="add_host">添加主机</button>
+    <button type="button" class="btn btn-info" id="sync">同步配置到Nagios</button>
 </div>
 {% endblock %}
 

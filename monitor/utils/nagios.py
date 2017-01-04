@@ -1,6 +1,6 @@
 # coding=utf-8
 import logging
-from Queue import Queue
+from Queue import Queue, Empty
 from subprocess import Popen, PIPE
 import threading
 
@@ -123,29 +123,41 @@ def remove_config(file_name, criteria):
     nagios_manager.restart()
 
 
-
-
-
 class NagiosRestartManager(threading.Thread):
     def __init__(self):
         super(NagiosRestartManager, self).__init__()
         self.queue = Queue()
+        self._stop = False
+        self.has_started = False
 
     def run(self):
-        while self.queue.get():
-            pass
-        popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
-        stdout = popen.stdout.read().decode('utf-8')
-        ret_code = popen.wait()
-        LOG.info(u'%d %s' % (ret_code, stdout))
+        self.has_started = True
+        while not self._stop:
+            has_task = False
+            try:
+                while self.queue.get_nowait():
+                    has_task = True
+            except Empty as e:
+                pass
+            if not has_task:
+                try:
+                    self.queue.get(timeout=1)
+                except Empty as e:
+                    continue
+            popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
+            stdout = popen.stdout.read().decode('utf-8')
+            ret_code = popen.wait()
+            LOG.info(u'%d %s' % (ret_code, stdout))
+
+    def stop(self):
+        self._stop = True
 
     def restart(self):
         """重启nagios服务"""
         self.queue.put_nowait(1)
 
 nagios_manager = NagiosRestartManager()
-nagios_manager.start()
-
+nagios_manager.setDaemon(True)
 
 if __name__ == '__main__':
     filename = SERVICE_CONFIG_FILE

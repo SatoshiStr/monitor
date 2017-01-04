@@ -2,7 +2,6 @@
 from datetime import datetime
 from flask import current_app
 from app import db
-from utils import nagios
 
 
 class Model(db.Model):
@@ -39,45 +38,27 @@ class HostGroup(IdMixin, CreateTimeMixin, Model):
     def create(name, desc):
         group = HostGroup(name=name, desc=desc)
         group.save()
-        nagios.add_host_group(name, desc)
 
     def delete(self):
-        """删除主机组和组里的所有组机，同时清理nagios配置
+        """删除主机组和组里的所有组机
         """
         to_delete_hosts = Host.query.filter_by(host_group_id=self.id).all()
         for host in to_delete_hosts:
             host.delete()
-        nagios.remove_host_group(self.name)
         db.session.delete(self)
 
     def add_host(self, host):
-        """清除主机的所有服务，并替换为主机组的服务"""
-        for service in host.services:
-            nagios.remove_service(host.hostname, service.command)
-        if host.host_group_id:
-            for service in host.host_group.services:
-                nagios.remove_service(host.hostname, service.command)
-        for service in self.services:
-            nagios.add_service(host.hostname, service.name, service.command,
-                               service.prefix)
-        #
         if host.host_group:
             host.host_group.host_sum -= 1
             host.host_group.save()
         self.host_sum += 1
         self.hosts.append(host)
         self.save()
-        print host.host_group_id, '======='
+        host.host_group_id = self.id
+        host.save()
         assert host.host_group_id == self.id
-        nagios.remove_host(host.hostname)
-        nagios.add_host(host.hostname, host.ip, host.host_group.name)
 
     def remove_host(self, host):
-        for service in host.host_group.services:
-            nagios.remove_service(host.hostname, service.command)
-        for service in host.services:
-            nagios.add_service(host.hostname, service.name, service.command,
-                               service.prefix)
         self.host_sum -= 1
         self.hosts.remove(host)
         self.save()
@@ -102,17 +83,11 @@ class Host(IdMixin, CreateTimeMixin, Model):
         host = Host(ip=ip, hostname=hostname, username=username,
                     password=password)
         host.save()
-        nagios.add_host(hostname, ip)
+        return host
 
     def delete(self):
-        """删除主机和主机的服务，同时清理nagios配置
+        """删除主机和主机的服务
         """
-        # clear service config
-        for service in self.services:
-            nagios.remove_service(self.hostname, service.command)
-        # clear host config
-        nagios.remove_host(self.hostname)
-        # delete db record
         db.session.delete(self)
 
     def is_monitor_host(self):
@@ -122,7 +97,8 @@ class Host(IdMixin, CreateTimeMixin, Model):
 
     @staticmethod
     def get_all():
-        hosts = Host.query.order_by(Host.create_at).all()
+        hosts = Host.query.filter_by(host_group_id=None).\
+            order_by(Host.create_at).all()
         nagios_services = Service.get_all(include_openstack=True)
         other_services = Service.get_all(include_openstack=False)
         for host in hosts:

@@ -2,10 +2,10 @@
 import logging
 from sqlalchemy import or_
 from flask import render_template, flash, redirect, url_for, request, jsonify
-from utils import nagios, ansible
+from utils import nagios2, ansible
 from app.models import Host, Service
 from . import main
-from .forms import HostForm, ServiceForm
+from .forms import HostForm
 
 LOG = logging.getLogger(__name__)
 
@@ -39,6 +39,8 @@ def add_host():
 def remove_host(host_id):
     host = Host.query.get_or_404(host_id)
     flash(u'成功删除主机 %s' % host.ip)
+    if host.host_group_id:
+        host.host_group.remove_host(host)
     host.delete()
     return '{}'
 
@@ -59,12 +61,9 @@ def change_host_service(host_id):
     for name in to_delete:
         service = Service.query.filter_by(name=name).one()
         host.services.remove(service)
-        nagios.remove_service(host.hostname, service.command)
     for name in to_add:
         service = Service.query.filter_by(name=name).one()
         host.services.append(service)
-        nagios.add_service(host.hostname, service.name, service.command,
-                           service.prefix)
     host.save()
     return '{}'
 
@@ -86,3 +85,10 @@ def get_config_detail(host_id):
     with open(ansible.TASK_DIR+'/'+host.latest_task_name) as f:
         content = f.read().encode('utf-8')
     return jsonify({'stdout': content})
+
+
+@main.route('/sync', methods=['POST'])
+def sync():
+    nagios2.sync()
+    flash(u'开始同步Nagios配置')
+    return '{}'
