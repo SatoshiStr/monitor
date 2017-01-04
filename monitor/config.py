@@ -27,6 +27,18 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    # nagios
+    NAGIOS_CONFIG_FILE_PREFIX = '/etc/nagios3/conf.d/'
+    NAGIOS_HOST_CONFIG_FILE = NAGIOS_CONFIG_FILE_PREFIX + 'hosts.cfg'
+    NAGIOS_HOST_GROUP_CONFIG_FILE = NAGIOS_CONFIG_FILE_PREFIX + 'hostgroups.cfg'
+    NAGIOS_SERVICE_CONFIG_FILE = NAGIOS_CONFIG_FILE_PREFIX + 'services.cfg'
+    NAGIOS_COMMAND_CONFIG_FILE = NAGIOS_CONFIG_FILE_PREFIX + 'commands.cfg'
+    NAGIOS_IP = os.environ.get('NAGIOS_IP') or list(Config.LOCAL_IPS)[0]
+    # ansible
+    ANSIBLE_TASK_DIR = os.environ.get('ANSIBLE_TASK_DIR') or './ansible-tasks'
+    # log
+    LOG_FILE = os.environ.get('LOG_FILE', None)
+    #
     DEBUG = True
 
 

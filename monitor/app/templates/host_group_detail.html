@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>主机组 {{ group.name }}</h3>
+<div>共{{ group.host_sum }}台主机</div>
+<div>{{ group.desc }}</div>
+<hr>
+<div>
+    <table class="table table-bordered table-hover table-striped">
+        <thead>
+        <tr>
+            <th>id</th>
+            <th>主机IP</th>
+            <th>主机名</th>
+            <th>SSH用户名</th>
+            <th>SSH密码</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for host in hosts %}
+        <tr>
+            <td>{{ host.id }}</td>
+            <td>{{ host.ip }}{{ ' (本机)' if host.is_monitor_host() else '' }}</td>
+            <td>{{ host.hostname }}</td>
+            <td>{{ host.username }}</td>
+            <td>{{ host.password }}</td>
+            <td class="">{{ host.state }}{%- if host.state in ('配置完成', '配置失败') -%}
+                <button type="button" class="btn btn-default btn-sm config_detail">查看详细</button>
+            {%- endif %}</td>
+            <td>
+                <button type="button" class="btn btn-primary btn-sm config_host">配置主机</button>
+                <button type="button" class="btn btn-success btn-sm show_group_modal">移动主机</button>
+                <input type="hidden" value="{{ host.id }}">
+                <button type="button" class="btn btn-danger btn-sm remove_host">删除主机</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div>
+    <div class="col-md-2 text-center">
+        <button type="button" class="btn btn-info" id="add_multiple_host">批量添加主机</button>
+    </div>
+    <div class="col-md-2 text-center">
+        <button type="button" class="btn btn-info" id="config_all_host">配置所有主机</button>
+    </div>
+</div>
+
+{% endblock %}

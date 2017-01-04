@@ -14,7 +14,8 @@ LOG = logging.getLogger(__name__)
 def root():
     hosts = Host.get_all()
     host_form = HostForm()
-    return render_template('root.html', hosts=hosts, host_form=host_form)
+    return render_template('root.html', hosts=hosts, host_form=host_form,
+                           root_active='active')
 
 
 @main.route('/host', methods=['POST'])
@@ -26,10 +27,9 @@ def add_host():
             flash(u'添加主机失败, IP %s 或主机名 %s 已经被使用' %
                   (form.ip.data, form.hostname.data))
         else:
-            host = Host(ip=form.ip.data, hostname=form.hostname.data,
-                        username=form.username.data, password=form.password.data)
-            host.save()
-            nagios.add_host(host.hostname, host.ip)
+            Host.create(ip=form.ip.data, hostname=form.hostname.data,
+                        username=form.username.data,
+                        password=form.password.data)
     else:
         flash(u'表单验证失败 %s' % form.errors)
     return redirect(url_for('main.root'))
@@ -38,18 +38,13 @@ def add_host():
 @main.route('/host/<int:host_id>/remove', methods=['POST'])
 def remove_host(host_id):
     host = Host.query.get_or_404(host_id)
-    for service in host.services:
-        nagios.remove_service(host.hostname, service.command)
-        service.delete()
-    nagios.remove_host(host.hostname)
-    ip = host.ip
+    flash(u'成功删除主机 %s' % host.ip)
     host.delete()
-    flash(u'成功删除主机 %s' % ip)
     return '{}'
 
 
 @main.route('/host/<int:host_id>/service', methods=['POST'])
-def add_service(host_id):
+def change_host_service(host_id):
     host = Host.query.get_or_404(host_id)
     if host.is_monitor_host():
         all_services = Service.get_all(include_openstack=True)
@@ -77,7 +72,7 @@ def add_service(host_id):
 @main.route('/host/<int:host_id>/config', methods=['POST'])
 def config_host(host_id):
     host = Host.query.get_or_404(host_id)
-    task_name = ansible.AnsibleTask.create(host)
+    task_name = ansible.deploy((host,))
     host.latest_task_name = task_name
     host.state = u'配置中'
     host.save()

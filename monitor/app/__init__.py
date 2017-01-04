@@ -8,10 +8,16 @@ from config import config
 
 db = SQLAlchemy()
 
+# todo: add first-request-hook kill nagios-restart-manager
 
 def create_app(config=config):
+    if config.LOG_FILE:
+        kwargs = dict(filename=config.LOG_FILE, filemode='w')
+    else:
+        kwargs = {}
     logging.basicConfig(format='%(levelname)s:%(asctime)s:%(name)s:%(message)s',
-                        level=logging.INFO, datefmt='%m/%d/%Y %H:%M:%S')
+                        level=logging.INFO, datefmt='%m/%d/%Y %H:%M:%S',
+                        **kwargs)
     app = Flask(__name__)
     app.config.from_object(config)
     db.init_app(app)

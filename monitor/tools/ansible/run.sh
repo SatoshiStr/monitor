@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-CUR_DIR=$(pwd)
-ANSIBLE_DIR=${CUR_DIR}/tools/ansible
-#ANSIBLE_DIR=.
-ansible-playbook ${ANSIBLE_DIR}/playbook.yml -i ${ANSIBLE_DIR}/hosts \
-    -e @${ANSIBLE_DIR}/globals.yml
+ansible-playbook playbook.yml -i hosts \
+    -e nrpe_config=templates/nrpe.cfg \
+    -e nrpe_dest=/etc/nagios/nrpe.cfg \
+    -e nagios_ip=10.10.1.82 \
+    -e "dec_str='gg a dec str'"

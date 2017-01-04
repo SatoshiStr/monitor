@@ -7,6 +7,9 @@ from flask_script import Manager
 from app import create_app, db
 
 if __name__ == '__main__':
+    #
+
+    #
     app = create_app()
     manager = Manager(app)
     migrate = Migrate(app, db)

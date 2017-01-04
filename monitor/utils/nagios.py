@@ -1,14 +1,34 @@
 # coding=utf-8
+import logging
+from Queue import Queue
 from subprocess import Popen, PIPE
+import threading
 
-# CONFIG_FILE_PREFIX = './'
-CONFIG_FILE_PREFIX = '/etc/nagios3/conf.d/'
-HOST_CONFIG_FILE = CONFIG_FILE_PREFIX+'hosts.cfg'
-SERVICE_CONFIG_FILE = CONFIG_FILE_PREFIX+'services.cfg'
-COMMAND_CONFIG_FILE = CONFIG_FILE_PREFIX+'commands.cfg'
+from config import config
+
+CONFIG_FILE_PREFIX = config.NAGIOS_CONFIG_FILE_PREFIX
+HOST_CONFIG_FILE = config.NAGIOS_HOST_CONFIG_FILE
+HOST_GROUP_CONFIG_FILE = config.NAGIOS_HOST_GROUP_CONFIG_FILE
+SERVICE_CONFIG_FILE = config.NAGIOS_SERVICE_CONFIG_FILE
+COMMAND_CONFIG_FILE = config.NAGIOS_COMMAND_CONFIG_FILE
+
+LOG = logging.getLogger(__name__)
 
 
-def add_host(host_name, ip):
+def add_host_group(name, desc):
+    config = [
+        ('hostgroup_name', name),
+        ('alias', desc),
+        ('_graphiteprefix', 'Monitor.hostgroup')
+    ]
+    add_config('hostgroup', config, HOST_GROUP_CONFIG_FILE)
+
+
+def remove_host_group(name):
+    remove_config(HOST_GROUP_CONFIG_FILE, [('hostgroup_name', name)])
+
+
+def add_host(host_name, ip, group_name=None):
     config = [
         ('use', 'generic-host'),
         ('host_name', host_name),
@@ -18,8 +38,10 @@ def add_host(host_name, ip):
         ('check_period', '24x7'),
         ('notification_interval', '30'),
         ('notification_period', '24x7'),
-        ('_graphiteprefix', 'Monitor')
+        ('_graphiteprefix', 'Monitor.host')
     ]
+    if group_name:
+        config.append(('hostgroup', group_name))
     add_config('host', config, HOST_CONFIG_FILE)
 
 
@@ -67,7 +89,7 @@ def add_config(name, config, file_name, overwrite=False):
     result = config_template % {'name': name, 'content': u'\n    '.join(content)}
     with open(file_name, 'a' if not overwrite else 'w') as f:
         f.write(result.encode('utf-8'))
-    popen = Popen(['/etc/init.d/nagios3', 'restart'])
+    nagios_manager.restart()
 
 
 def remove_config(file_name, criteria):
@@ -98,7 +120,31 @@ def remove_config(file_name, criteria):
         # clear file
         with open(file_name, 'w') as f:
             f.write('')
-    popen = Popen(['/etc/init.d/nagios3', 'restart'])
+    nagios_manager.restart()
+
+
+
+
+
+class NagiosRestartManager(threading.Thread):
+    def __init__(self):
+        super(NagiosRestartManager, self).__init__()
+        self.queue = Queue()
+
+    def run(self):
+        while self.queue.get():
+            pass
+        popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
+        stdout = popen.stdout.read().decode('utf-8')
+        ret_code = popen.wait()
+        LOG.info(u'%d %s' % (ret_code, stdout))
+
+    def restart(self):
+        """重启nagios服务"""
+        self.queue.put_nowait(1)
+
+nagios_manager = NagiosRestartManager()
+nagios_manager.start()
 
 
 if __name__ == '__main__':

@@ -18,10 +18,10 @@ create database if not exists monitor;
 EOF
 
 cd /opt/monitor
-pip install -r requirements.txt
+source /opt/monitor/env.sh
+pip install -r /opt/monitor/requirements.txt
 python manage.py db upgrade
 python manage.py runserver --host 0.0.0.0 &
 cd -
-
 
 /bin/bash

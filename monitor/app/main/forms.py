@@ -15,3 +15,9 @@ class HostForm(FlaskForm):
 class ServiceForm(FlaskForm):
     name = StringField(u'服务名', validators=[DataRequired()])
     submit = SubmitField(u'添加')
+
+
+class HostGroupForm(FlaskForm):
+    name = StringField(u'主机组名', validators=[DataRequired()])
+    desc = StringField(u'主机组描述', validators=[DataRequired()])
+    submit = SubmitField(u'添加')

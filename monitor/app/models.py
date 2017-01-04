@@ -2,6 +2,7 @@
 from datetime import datetime
 from flask import current_app
 from app import db
+from utils import nagios
 
 
 class Model(db.Model):
@@ -22,6 +23,66 @@ class CreateTimeMixin(object):
     create_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
 
 
+class HostGroup(IdMixin, CreateTimeMixin, Model):
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    desc = db.Column(db.String(50), nullable=False, unique=True)
+    host_sum = db.Column(db.Integer, default=0)
+
+    services = db.relationship('Service', secondary='host_group_service_map',
+                               backref=db.backref('groups', lazy='dynamic'),
+                               lazy='joined')
+    hosts = db.relationship('Host',
+                            backref=db.backref('host_group', lazy='joined'),
+                            lazy='joined')
+
+    @staticmethod
+    def create(name, desc):
+        group = HostGroup(name=name, desc=desc)
+        group.save()
+        nagios.add_host_group(name, desc)
+
+    def delete(self):
+        """删除主机组和组里的所有组机，同时清理nagios配置
+        """
+        to_delete_hosts = Host.query.filter_by(host_group_id=self.id).all()
+        for host in to_delete_hosts:
+            host.delete()
+        nagios.remove_host_group(self.name)
+        db.session.delete(self)
+
+    def add_host(self, host):
+        """清除主机的所有服务，并替换为主机组的服务"""
+        for service in host.services:
+            nagios.remove_service(host.hostname, service.command)
+        if host.host_group_id:
+            for service in host.host_group.services:
+                nagios.remove_service(host.hostname, service.command)
+        for service in self.services:
+            nagios.add_service(host.hostname, service.name, service.command,
+                               service.prefix)
+        #
+        if host.host_group:
+            host.host_group.host_sum -= 1
+            host.host_group.save()
+        self.host_sum += 1
+        self.hosts.append(host)
+        self.save()
+        print host.host_group_id, '======='
+        assert host.host_group_id == self.id
+        nagios.remove_host(host.hostname)
+        nagios.add_host(host.hostname, host.ip, host.host_group.name)
+
+    def remove_host(self, host):
+        for service in host.host_group.services:
+            nagios.remove_service(host.hostname, service.command)
+        for service in host.services:
+            nagios.add_service(host.hostname, service.name, service.command,
+                               service.prefix)
+        self.host_sum -= 1
+        self.hosts.remove(host)
+        self.save()
+
+
 class Host(IdMixin, CreateTimeMixin, Model):
     ip = db.Column(db.String(15), nullable=False, unique=True)
     hostname = db.Column(db.String(50), nullable=False, unique=True)
@@ -30,10 +91,29 @@ class Host(IdMixin, CreateTimeMixin, Model):
     state = db.Column(db.Enum(u'新加入', u'配置中', u'配置完成', u'配置失败'),
                       nullable=False, default=u'新加入')
     latest_task_name = db.Column(db.String(50))
+    host_group_id = db.Column(db.Integer, db.ForeignKey(HostGroup.id))
 
     services = db.relationship('Service', secondary='host_service_map',
                                backref=db.backref('hosts', lazy='dynamic'),
                                lazy='joined')
+
+    @staticmethod
+    def create(ip, hostname, username, password):
+        host = Host(ip=ip, hostname=hostname, username=username,
+                    password=password)
+        host.save()
+        nagios.add_host(hostname, ip)
+
+    def delete(self):
+        """删除主机和主机的服务，同时清理nagios配置
+        """
+        # clear service config
+        for service in self.services:
+            nagios.remove_service(self.hostname, service.command)
+        # clear host config
+        nagios.remove_host(self.hostname)
+        # delete db record
+        db.session.delete(self)
 
     def is_monitor_host(self):
         if self.ip in current_app.config['LOCAL_IPS']:
@@ -111,5 +191,13 @@ class Service(IdMixin, Model):
 class HostServiceMap(Model):
     __tablename__ = 'host_service_map'
     host_id = db.Column(db.Integer, db.ForeignKey(Host.id), primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey(Service.id),
+                           primary_key=True)
+
+
+class HostGroupServiceMap(Model):
+    __tablename__ = 'host_group_service_map'
+    group_id = db.Column(db.Integer, db.ForeignKey(HostGroup.id),
+                         primary_key=True)
     service_id = db.Column(db.Integer, db.ForeignKey(Service.id),
                            primary_key=True)
