@@ -102,6 +102,7 @@ sed -i "s/^config_file = ''/config_file = '\/etc\/graphios\/graphios.cfg'/g" /us
 
 mkdir -p /usr/local/nagios/var
 touch /usr/local/nagios/var/graphios.log
+chmod a+x /usr/local/nagios/var/graphios.log
 
 sed -i "s/^process_performance_data=.*/process_performance_data=1/g" /etc/nagios3/nagios.cfg
 cat >>/etc/nagios3/nagios.cfg <<EOF

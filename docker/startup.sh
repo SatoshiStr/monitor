@@ -7,6 +7,7 @@ set -x
 service apache2 start
 service nagios3 start
 
+/opt/graphite/bin/carbon-cache.py start
 service graphios start
 service grafana-server start
 

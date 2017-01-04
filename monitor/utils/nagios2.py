@@ -41,14 +41,16 @@ class NagiosSync(threading.Thread):
         sync_running = True
         # synchronize config
         # clear file
-        os.remove(HOST_CONFIG_FILE)
-        os.remove(HOST_GROUP_CONFIG_FILE)
-        os.remove(SERVICE_CONFIG_FILE)
+        clear_file(HOST_CONFIG_FILE)
+        clear_file(HOST_GROUP_CONFIG_FILE)
+        clear_file(SERVICE_CONFIG_FILE)
         #
         with create_app().app_context():
             groups = HostGroup.query.all()
             for group in groups:
-                add_host_group(group.name, group.desc)
+                host_names = [host.hostname for host in group.hosts]
+                members = ','.join(host_names)
+                add_host_group(group.name, group.desc, members)
             for host in Host.query.all():
                 add_host(host.hostname, host.ip,
                          host.host_group.name if host.host_group else None)
@@ -68,18 +70,25 @@ class NagiosSync(threading.Thread):
         sync_running = False
 
 
+def clear_file(file_name):
+    with open(file_name, 'w') as f:
+        f.write('')
+
+
 config_template = u'''
 define %(name)s {
     %(content)s
 }
 '''
 
-def add_host_group(name, desc):
+
+def add_host_group(name, desc, members):
     config = [
         ('hostgroup_name', name),
         ('alias', desc),
-        # ('_graphiteprefix', 'Monitor.hostgroup')
     ]
+    if members:
+        config.append(('members', members))
     add_config('hostgroup', config, HOST_GROUP_CONFIG_FILE)
 
 
@@ -95,8 +104,8 @@ def add_host(host_name, ip, group_name=None):
         ('notification_period', '24x7'),
         ('_graphiteprefix', 'Monitor.host')
     ]
-    if group_name:
-        config.append(('hostgroup', group_name))
+    # if group_name:
+    #     config.append(('hostgroup', group_name))
     add_config('host', config, HOST_CONFIG_FILE)
 
 
