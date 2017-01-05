@@ -1,23 +1,19 @@
 ---
 - hosts:
-    monitor_target
+    - monitor_target
   sudo: true
   tasks:
-    - name: install nrpe-server
+    - name: install ganglia-monitor
       apt:
-        name: nagios-nrpe-server
+        name: ganglia-monitor
         update_cache: yes
 
-    - name: install nagios-plugin
-      apt:
-        name: nagios-plugins
-
-    - name: change nrpe config
+    - name: change gmond config
       template:
-        src: "{{ nrpe_config }}"
-        dest: "{{ nrpe_dest }}"
+        src: "{{ gmond_src }}"
+        dest: "{{ gmond_dest }}"
 
-    - name: restart nrpe server
+    - name: restart ganglia-monitor
       service:
-        name: nagios-nrpe-server
+        name: ganglia-monitor
         state: restarted

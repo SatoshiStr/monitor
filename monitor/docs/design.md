@@ -36,3 +36,32 @@
     - 网络
 
 直接修改nagios配置
+
+### gmond 指标
+#### cpu
+load_one  平均负荷
+load_five
+load_fifteen
+
+cpu_idle cpu空闲 百分比
+cpu_user user-level的cpu占用率 百分比
+cpu_system
+
+#### disk
+disk_total 总磁盘空间 GB
+disk_free 空闲
+
+#### memory
+mem_total 总内存空间 KB
+mem_free
+swap_total
+swap_free
+
+#### proc
+proc_total 总进程数
+proc_run 运行进程数
+
+#### network
+bytes_in 每秒收到的字节数 B/s
+bytes_out
+

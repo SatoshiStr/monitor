@@ -10,8 +10,14 @@ ENV LANG zh_CN.UTF-8
 ENV LANGUAGE zh_CN:zh  
 ENV LC_ALL zh_CN.UTF-8 
 
+COPY install_ganglia.sh /root/
+RUN /bin/bash /root/install_ganglia.sh
+
 COPY install_nagios.sh /root/
 RUN /bin/bash /root/install_nagios.sh
+
+COPY check_ganglia /usr/lib/nagios/plugins/
+RUN chmod a+x /usr/lib/nagios/plugins/check_ganglia
 
 COPY install_graphite.sh /root/
 RUN /bin/bash /root/install_graphite.sh

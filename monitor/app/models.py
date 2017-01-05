@@ -22,6 +22,80 @@ class CreateTimeMixin(object):
     create_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
 
 
+class Service(IdMixin, Model):
+    """
+    服务分为两部分
+    - 通过nagios的nrpe来获取性能信息:插件在被监控的机器上运行,因此在对应机器上配置
+    - 通过openstack的sdk获取性能信息:插件在nagios安装节点运行,因此在nagios节点上配置
+    """
+    _physical = {
+        u'CPU': [
+            (u'1分钟平均负载', 'check_ganglia!load_one!4!5', ''),
+            (u'5分钟平均负载', 'check_ganglia!load_five!4!5', ''),
+            (u'15分钟平均负载', 'check_ganglia!load_fifteen!4!5', ''),
+            (u'CPU空闲', 'check_ganglia!cpu_idle!-1!-1', ''),
+        ],
+        u'磁盘': [
+            (u'磁盘总空间', 'check_ganglia!disk_total!-1!-1', ''),
+            (u'磁盘空闲空间', 'check_ganglia!disk_free!-1!-1', ''),
+        ],
+        u'内存': [
+            (u'内存总空间', 'check_ganglia!mem_total!-1!-1', ''),
+            (u'内存空闲空间', 'check_ganglia!mem_free!-1!-1', ''),
+            (u'swap总空间', 'check_ganglia!swap_total!-1!-1', ''),
+            (u'swap空闲空间', 'check_ganglia!swap_free!-1!-1', ''),
+        ],
+        u'进程': [
+            (u'进程总数', 'check_ganglia!proc_total!-1!-1', ''),
+            (u'运行进程总数', 'check_ganglia!proc_run!-1!-1', ''),
+        ],
+        u'网络': [
+            (u'每秒收到的字节数', 'check_ganglia!bytes_in!-1!-1', ''),
+            (u'每秒发送的字节数', 'check_ganglia!bytes_out!-1!-1', ''),
+        ],
+    }
+    _cloud = {
+        u'虚拟机': [
+            (u'虚拟机CPU使用率', 'check_vm_cpu', 'vm.memory'),
+        ]
+    }
+
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    command = db.Column(db.String(50), nullable=False, unique=True)
+    prefix = db.Column(db.String(50), nullable=False)
+    tag = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.Enum('physical', 'cloud'), nullable=False)
+
+    @staticmethod
+    def init():
+        for tag in Service._physical:
+            for name, command, prefix in Service._physical[tag]:
+                s = Service(name=name, command=command, prefix=prefix, tag=tag,
+                            type='physical')
+                s.save()
+        for tag in Service._cloud:
+            for name, command, prefix in Service._cloud[tag]:
+                s = Service(name=name, command=command, prefix=prefix, tag=tag,
+                            type='cloud')
+                s.save()
+        db.session.flush()
+
+    @staticmethod
+    def get_all(include_openstack=False):
+        if Service.query.count() == 0:
+            Service.init()
+        if include_openstack:
+            return Service.query.order_by(Service.id).all()
+        else:
+            return Service.query.filter_by(type='physical').order_by(
+                Service.id).all()
+
+
+    @staticmethod
+    def to_str(services):
+        return u','.join([service.name for service in services])
+
+
 class HostGroup(IdMixin, CreateTimeMixin, Model):
     name = db.Column(db.String(50), nullable=False, unique=True)
     desc = db.Column(db.String(50), nullable=False, unique=True)
@@ -29,7 +103,7 @@ class HostGroup(IdMixin, CreateTimeMixin, Model):
 
     services = db.relationship('Service', secondary='host_group_service_map',
                                backref=db.backref('groups', lazy='dynamic'),
-                               lazy='joined')
+                               lazy='joined', order_by=Service.id)
     hosts = db.relationship('Host',
                             backref=db.backref('host_group', lazy='joined'),
                             lazy='joined')
@@ -76,7 +150,8 @@ class Host(IdMixin, CreateTimeMixin, Model):
 
     services = db.relationship('Service', secondary='host_service_map',
                                backref=db.backref('hosts', lazy='dynamic'),
-                               lazy='joined')
+                               lazy='joined',
+                               order_by=Service.id)
 
     @staticmethod
     def create(ip, hostname, username, password):
@@ -105,63 +180,17 @@ class Host(IdMixin, CreateTimeMixin, Model):
             host.selected_service_names = Service.to_str(host.services)
             if host.is_monitor_host():
                 host.left_service_names = Service.\
-                    to_str(set(nagios_services)-set(host.services))
+                    to_str(remove_exist(nagios_services, host.services))
             else:
                 host.left_service_names = Service.\
-                    to_str(set(other_services)-set(host.services))
+                    to_str(remove_exist(other_services, host.services))
         return hosts
 
 
-class Service(IdMixin, Model):
-    """
-    服务分为两部分
-    - 通过nagios的nrpe来获取性能信息:插件在被监控的机器上运行,因此在对应机器上配置
-    - 通过openstack的sdk获取性能信息:插件在nagios安装节点运行,因此在nagios节点上配置
-    """
-    openstack_service_range = {u'虚拟机内存', u'虚拟机CPU使用率'}
-    service_range = {u'内存', u'CPU负载', u'网卡使用率'}
-    service_range.update(openstack_service_range)
-
-    commands = {
-        u'虚拟机内存': ('check_vm_mem', 'vm.cpu'),
-        u'虚拟机CPU使用率': ('check_vm_cpu', 'vm.memory'),
-        u'内存': ('check_mem', 'physical.memory'),
-        u'CPU负载': ('check_cpu', 'physical.cpu'),
-        u'网卡使用率': ('check_if', 'physical.interface')
-    }
-
-    name = db.Column(db.String(50), nullable=False, unique=True)
-
-    @property
-    def command(self):
-        return Service.commands[self.name][0]
-
-    @property
-    def prefix(self):
-        return Service.commands[self.name][1]
-
-    @staticmethod
-    def get_all(include_openstack=False):
-        services = Service.query.all()
-        exist_set = set([service.name for service in services])
-        to_add = Service.service_range - exist_set
-        for name in to_add:
-            service = Service(name=name)
-            service.save()
-        if to_add:
-            services = Service.query.all()
-        results = []
-        if not include_openstack:
-            for service in services:
-                if service.name not in Service.openstack_service_range:
-                    results.append(service)
-        else:
-            results = services
-        return results
-
-    @staticmethod
-    def to_str(services):
-        return u','.join([service.name for service in services])
+def remove_exist(all_list, exist_list):
+    for item in exist_list:
+        all_list.remove(item)
+    return all_list
 
 
 class HostServiceMap(Model):

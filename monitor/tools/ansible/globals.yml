@@ -1,5 +1,8 @@
-nrpe_config: "templates/nrpe.cfg"
-nrpe_dest: "/etc/nagios/nrpe.cfg"
+#
+#nrpe_config: "templates/nrpe.cfg"
+#nrpe_dest: "/etc/nagios/nrpe.cfg"
+#nagios_ip: "10.10.1.110"
 
-nagios_ip: "10.10.1.81"
-dec_str: "hi, a dec str"
+gmond_src: "templates/gmond.conf"
+gmond_dest: "/etc/ganglia/gmond.conf"
+moniter_server_ip: "10.10.1.110"

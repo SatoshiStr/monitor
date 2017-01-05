@@ -6,7 +6,7 @@ from utils import ansible
 from app.models import Host, Service, HostGroup
 from . import main
 from .forms import HostGroupForm, MultiHostForm
-
+from app.models import remove_exist
 
 @main.route('/host-group')
 def host_group_list():
@@ -22,7 +22,7 @@ def host_group_detail(group_id):
     group = HostGroup.query.get_or_404(group_id)
     group_list = HostGroup.query.order_by(HostGroup.id).all()
     hosts = Host.query.filter_by(host_group_id=group.id).order_by(Host.id).all()
-    left_services = list(set(Service.get_all()) - set(group.services))
+    left_services = remove_exist(Service.get_all(), group.services)
     return render_template('host_group_detail.html', group=group, hosts=hosts,
                            form=form, group_list=group_list,
                            left_services=left_services,

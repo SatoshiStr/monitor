@@ -1,2 +1,0 @@
-[monitor_target]
-10.10.1.101 ansible_ssh_user=adog ansible_ssh_pass=admin123 ansible_become_pass=admin123

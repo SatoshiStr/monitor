@@ -69,8 +69,8 @@ def deploy(hosts):
         f.write(make_inventory(hosts))
     host_ids = [host.id for host in hosts]
     task = AnsibleTask(task_name, host_ids, inventory_file,
-                       ['-e', 'nrpe_config=templates/nrpe.cfg',
-                        '-e', 'nrpe_dest=/etc/nagios/nrpe.cfg',
-                        '-e', 'nagios_ip='+NAGIOS_IP])
+                       ['-e', 'gmond_src=templates/gmond.conf',
+                        '-e', 'gmond_dest=/etc/ganglia/gmond.conf',
+                        '-e', 'moniter_server_ip='+NAGIOS_IP])
     task.start()
     return task_name

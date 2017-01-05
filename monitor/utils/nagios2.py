@@ -24,6 +24,7 @@ LOG = logging.getLogger(__name__)
 
 sync_running = False
 
+
 def sync():
     nagios_sync = NagiosSync()
     nagios_sync.setDaemon(True)
@@ -56,12 +57,20 @@ class NagiosSync(threading.Thread):
                          host.host_group.name if host.host_group else None)
                 if host.host_group:
                     for service in host.host_group.services:
+                        if service.prefix:
+                            prefix = host.host_group.name + '.' + service.prefix
+                        else:
+                            prefix = host.host_group.name
                         add_service(host.hostname, service.name,
-                                    service.command, service.prefix)
+                                    service.command, prefix)
                 else:
                     for service in host.services:
+                        if service.prefix:
+                            prefix = 'Standalone.' + service.prefix
+                        else:
+                            prefix = 'Standalone'
                         add_service(host.hostname, service.name,
-                                    service.command, service.prefix)
+                                    service.command, prefix)
         # restart
         popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
         stdout = popen.stdout.read().decode('utf-8')
@@ -93,6 +102,10 @@ def add_host_group(name, desc, members):
 
 
 def add_host(host_name, ip, group_name=None):
+    if group_name:
+        prefix = 'Monitor.' + group_name
+    else:
+        prefix = 'Monitor.Standalone'
     config = [
         ('use', 'generic-host'),
         ('host_name', host_name),
@@ -102,10 +115,8 @@ def add_host(host_name, ip, group_name=None):
         ('check_period', '24x7'),
         ('notification_interval', '30'),
         ('notification_period', '24x7'),
-        ('_graphiteprefix', 'Monitor.host')
+        ('_graphiteprefix', prefix)
     ]
-    # if group_name:
-    #     config.append(('hostgroup', group_name))
     add_config('host', config, HOST_CONFIG_FILE)
 
 

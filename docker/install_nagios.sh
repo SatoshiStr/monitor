@@ -27,4 +27,11 @@ sed -i "s/^check_external_commands=.*/check_external_commands=1/g" /etc/nagios3/
 # set nagios password
 htpasswd -bc /etc/nagios3/htpasswd.users ${NAGIOS_USER} ${NAGIOS_PASS}
 
+cat >> /etc/nagios3/conf.d/commands.cfg  << EOF
+define command {
+  command_name check_ganglia
+  command_line \$USER1$/check_ganglia -h \$HOSTADDRESS$ -m \$ARG1$ -w \$ARG2$ -c \$ARG3$
+}
+EOF
+
 service nagios3 restart

@@ -45,6 +45,19 @@ def remove_host(host_id):
     return '{}'
 
 
+@main.route('/host/<int:host_id>/service', methods=['GET'])
+def get_host_service(host_id):
+    host = Host.query.get_or_404(host_id)
+    if host.is_monitor_host():
+        all_services = Service.get_all(include_openstack=True)
+    else:
+        all_services = Service.get_all(include_openstack=False)
+    # wrap service in tags
+
+    result = ''
+
+
+
 @main.route('/host/<int:host_id>/service', methods=['POST'])
 def change_host_service(host_id):
     host = Host.query.get_or_404(host_id)
