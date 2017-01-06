@@ -45,6 +45,9 @@ class NagiosSync(threading.Thread):
         clear_file(HOST_CONFIG_FILE)
         clear_file(HOST_GROUP_CONFIG_FILE)
         clear_file(SERVICE_CONFIG_FILE)
+        # vm
+        set_env()
+        vms = get_all_vms()
         #
         with create_app().app_context():
             groups = HostGroup.query.all()
@@ -57,6 +60,9 @@ class NagiosSync(threading.Thread):
                          host.host_group.name if host.host_group else None)
                 if host.host_group:
                     for service in host.host_group.services:
+                        if service.tag == u'虚拟机':
+                            # 跳过, 主机组不包含虚拟机的监控
+                            continue
                         if service.prefix:
                             prefix = host.host_group.name + '.' + service.prefix
                         else:
@@ -69,14 +75,76 @@ class NagiosSync(threading.Thread):
                             prefix = 'Standalone.' + service.prefix
                         else:
                             prefix = 'Standalone'
-                        add_service(host.hostname, service.name,
-                                    service.command, prefix)
+                        if service.tag == u'虚拟机':
+                            prefix = service.prefix
+                            for vm in vms:
+                                vm_id = vm['id']
+                                add_service(host.hostname, vm_id[:8] + service.name,
+                                            service.command % vm_id, prefix)
+                        else:
+                            add_service(host.hostname, service.name,
+                                        service.command, prefix)
         # restart
         popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
         stdout = popen.stdout.read().decode('utf-8')
         ret_code = popen.wait()
         LOG.info(u'%d %s' % (ret_code, stdout))
         sync_running = False
+
+
+def parse_result(text):
+    text = text.strip()
+    lines = text.split('\n')
+    keys = parse_line(lines[1])
+    resutls = []
+    for line in lines[3:-1]:
+        d = {}
+        items = parse_line(line)
+        for key, value in zip(keys, items):
+            d[key] = value
+        resutls.append(d)
+    return resutls
+
+
+def parse_line(line):
+    line = line[1:-1]
+    items = line.split('|')
+    for i, item in enumerate(items):
+        items[i] = item.strip()
+    return items
+
+
+def run_command(command):
+    if isinstance(command, str) or isinstance(command, unicode):
+        command = command.split()
+    proc = Popen(command, stdout=PIPE)
+    stdout = proc.stdout.read()
+    ret_code = proc.wait()
+    if ret_code == 0:
+        return parse_result(stdout)
+    return 'fail'
+
+
+def get_all_vms():
+    results = run_command('nova list')
+    vms = []
+    for result in results:
+        vm = {
+            'id': result['ID'],
+            'name': result['Name']
+        }
+        vms.append(vm)
+    return vms
+
+
+def set_env():
+    # read env
+    with open('/openrc') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                key, value = line.split()[1].split('=')
+                os.environ[key] = value
 
 
 def clear_file(file_name):

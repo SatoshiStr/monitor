@@ -56,10 +56,17 @@ class Service(IdMixin, Model):
     }
     _cloud = {
         u'虚拟机': [
-            (u'虚拟机CPU使用率', 'check_vm_cpu', 'vm.memory'),
+            (u'虚拟机CPU使用率', 'check_vm!%s!cpu_util', 'vm'),
+            (u'虚拟机内存总空间', 'check_vm!%s!memory', 'vm'),
+            (u'虚拟机内存已使用空间', 'check_vm!%s!memory.usage', 'vm'),
+            (u'虚拟机磁盘每秒读取字节', 'check_vm!%s!disk.read.bytes.rate', 'vm'),
+            (u'虚拟机磁盘每秒写入字节', 'check_vm!%s!disk.write.bytes.rate', 'vm'),
+            (u'虚拟机磁盘总空间', 'check_vm!%s!disk.capacity', 'vm'),
+            (u'虚拟机磁盘已使用空间', 'check_vm!%s!disk.usage', 'vm'),
+            (u'虚拟机网络每秒流入字节', 'check_vm!%s!network.incoming.bytes.rate', 'vm'),
+            (u'虚拟机网络每秒流出字节', 'check_vm!%s!network.outgoing.bytes.rate', 'vm')
         ]
     }
-
     name = db.Column(db.String(50), nullable=False, unique=True)
     command = db.Column(db.String(50), nullable=False, unique=True)
     prefix = db.Column(db.String(50), nullable=False)

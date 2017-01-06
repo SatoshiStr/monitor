@@ -32,6 +32,10 @@ define command {
   command_name check_ganglia
   command_line \$USER1$/check_ganglia -h \$HOSTADDRESS$ -m \$ARG1$ -w \$ARG2$ -c \$ARG3$
 }
+define command {
+  command_name check_vm
+  command_line \$USER1$/check_vm \$ARG1$ \$ARG2$
+}
 EOF
 
 service nagios3 restart

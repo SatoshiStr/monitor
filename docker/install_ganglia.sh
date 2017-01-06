@@ -9,7 +9,7 @@ if [ -z "$LOCAL_IP" ]; then
 fi
 
 
-
+apt-get update
 apt-get $APT_OPTIONS -y --force-yes install ganglia-monitor
 apt-get $APT_OPTIONS -y --force-yes install gmetad
 # Install ganglia-webfrontend in noninteractive mode

@@ -8,7 +8,6 @@ from config import config
 
 db = SQLAlchemy()
 
-# todo: add first-request-hook kill nagios-restart-manager
 
 def create_app(config=config):
     if config.LOG_FILE:

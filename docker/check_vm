@@ -1,0 +1,148 @@
+#!/usr/bin/env python
+# coding=utf-8
+from datetime import datetime, timedelta
+import json
+import os
+from subprocess import Popen, PIPE
+import sys
+
+
+def parse_result(text):
+    text = text.strip()
+    lines = text.split('\n')
+    keys = parse_line(lines[1])
+    resutls = []
+    for line in lines[3:-1]:
+        d = {}
+        items = parse_line(line)
+        for key, value in zip(keys, items):
+            d[key] = value
+        resutls.append(d)
+    return resutls
+
+
+def parse_line(line):
+    line = line[1:-1]
+    items = line.split('|')
+    for i, item in enumerate(items):
+        items[i] = item.strip()
+    return items
+
+
+def run_command(command):
+    if isinstance(command, str) or isinstance(command, unicode):
+        command = command.split()
+    proc = Popen(command, stdout=PIPE)
+    stdout = proc.stdout.read()
+    ret_code = proc.wait()
+    if ret_code == 0:
+        return parse_result(stdout)
+    return 'fail'
+
+
+def cache_decor(filename):
+    """
+    把缓存和缓存时间记录到json文件,避免频繁请求
+    """
+    cache_dir = './'
+    cache_minutes = 60
+
+    def decor(func):
+        def deced_func(*args, **kwargs):
+            cache_file = cache_dir + filename
+            try:
+                with open(cache_file) as f:
+                    data = json.loads(f.read())
+            except IOError:
+                data = {'time': '1/1/1970 1:1:1'}
+            old_time = datetime.strptime(data['time'], '%m/%d/%Y %H:%M:%S')
+            if datetime.now() - old_time > timedelta(minutes=cache_minutes):
+                data['cache'] = func(*args, **kwargs)
+                data['time'] = datetime.now().strftime('%m/%d/%Y %H:%M:%S')
+                with open(cache_file, 'w') as f:
+                    f.write(json.dumps(data))
+            return data['cache']
+        return deced_func
+    return decor
+
+
+@cache_decor(filename='vms')
+def get_all_vms():
+    results = run_command('nova list')
+    vms = []
+    for result in results:
+        vm = {
+            'id': result['ID'],
+            'name': result['Name']
+        }
+        vms.append(vm)
+    return vms
+
+
+@cache_decor(filename='meters')
+def get_all_meters():
+    results = run_command('ceilometer meter-list')
+    meters = []
+    for result in results:
+        meter = {
+            'name': result['Name'],
+            'resource_id': result['Resource ID']
+        }
+        meters.append(meter)
+    return meters
+
+
+def get_vm_meters(vm_id):
+    meters = get_all_meters()
+    vm_meters = []
+    for meter in meters:
+        if vm_id in meter['resource_id']:
+            vm_meters.append(meter)
+    return vm_meters
+
+
+def get_vm_resource_id(vm_id, name):
+    vm_meters = get_vm_meters(vm_id)
+    d = {}
+    for meter in vm_meters:
+        d[meter['name']] = meter['resource_id']
+    if name in d:
+        return d[name]
+    else:
+        return vm_id
+
+
+def get_vm_sample(vm_id, meter):
+    resource_id = get_vm_resource_id(vm_id, meter)
+    command = "ceilometer sample-list -l 1 -m %s -q resource_id=%s " %\
+              (meter, resource_id)
+    result = run_command(command)
+    if not result:
+        return {}
+    else:
+        result = result[0]
+        sample = {'name': result['Name'],
+                  'value': result['Volume'],
+                  'unit': result['Unit']}
+        return sample
+
+if __name__ == '__main__':
+    # meters = ['cpu_util', 'memory', 'memory.usage', 'disk.read.bytes.rate',
+    #           'disk.write.bytes.rate', 'disk.capacity', 'disk.usage',
+    #           'network.incoming.bytes.rate', 'network.outgoing.bytes.rate']
+    # read env
+    with open('/openrc') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                key, value = line.split()[1].split('=')
+                os.environ[key] = value
+    #
+    vm_id = sys.argv[1]
+    meter = sys.argv[2]
+    sample = get_vm_sample(vm_id, meter)
+    template = '%(name)s is %(value)s%(unit)s |%(name)s=%(value)s'
+    if sample:
+        print template % sample
+    else:
+        print 'No sample for ' + meter

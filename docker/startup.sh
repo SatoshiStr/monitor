@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 set -x
+source /root/openrc
 
 /etc/init.d/mysql restart
 
