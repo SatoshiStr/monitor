@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>{% block title %}设置系统{% endblock %}</title>
+    <title>{% block title %}管理系统{% endblock %}</title>
 
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 </head>
@@ -17,11 +17,18 @@
     <nav class="navbar navbar-default mon-nav" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="/">设置系统</a>
+                <a class="navbar-brand" href="/">管理系统</a>
             </div>
             <ul class="nav navbar-nav">
-              <li class="{{ root_active }}"><a href="/">首页</a></li>
-              <li class="{{ group_list_active }}"><a href="{{ url_for('main.host_group_list') }}">主机组</a></li>
+                <li class="{{ root_active }}"><a href="/">首页</a></li>
+                <li class="{{ group_list_active }}"><a href="{{ url_for('main.host_group_list') }}">主机组</a></li>
+                <li class="{{ vm_list_active }}"><a href="{{ url_for('main.vm_group_list') }}">虚拟机</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="{{ 'http://%s:3000' % LOCAL_IP }}">仪表盘</a></li>
+                <li><a href="{{ 'http://%s/nagios3' % LOCAL_IP }}">Nagios</a></li>
+                <li><a href="{{ 'http://%s/graphite' % LOCAL_IP }}">graphite</a></li>
+                <li><a href="{{ 'http://%s/ganglia' % LOCAL_IP }}">ganglia</a></li>
             </ul>
         </div>
     </nav>

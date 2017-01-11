@@ -44,7 +44,7 @@ def cache_decor(filename):
     """
     把缓存和缓存时间记录到json文件,避免频繁请求
     """
-    cache_dir = './'
+    cache_dir = '/etc/nagios3/vm_cache/'
     cache_minutes = 60
 
     def decor(func):
@@ -64,19 +64,6 @@ def cache_decor(filename):
             return data['cache']
         return deced_func
     return decor
-
-
-@cache_decor(filename='vms')
-def get_all_vms():
-    results = run_command('nova list')
-    vms = []
-    for result in results:
-        vm = {
-            'id': result['ID'],
-            'name': result['Name']
-        }
-        vms.append(vm)
-    return vms
 
 
 @cache_decor(filename='meters')
@@ -114,8 +101,11 @@ def get_vm_resource_id(vm_id, name):
 
 def get_vm_sample(vm_id, meter):
     resource_id = get_vm_resource_id(vm_id, meter)
-    command = "ceilometer sample-list -l 1 -m %s -q resource_id=%s " %\
-              (meter, resource_id)
+    time_line = datetime.now() - timedelta(minutes=30)
+    timestamp = time_line.strftime('%Y-%m-%dT%H:%M:%S')
+    command = ("ceilometer sample-list -l 1 -m %s -q "
+               "resource_id=%stimestamp>%s ") % \
+              (meter, resource_id, timestamp)
     result = run_command(command)
     if not result:
         return {}
@@ -143,6 +133,7 @@ if __name__ == '__main__':
     sample = get_vm_sample(vm_id, meter)
     template = '%(name)s is %(value)s%(unit)s |%(name)s=%(value)s'
     if sample:
+        sample['name'] = sample['name'].replace('.', '_')
         print template % sample
     else:
         print 'No sample for ' + meter

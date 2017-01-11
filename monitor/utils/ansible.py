@@ -35,10 +35,10 @@ class AnsibleTask(threading.Thread):
         os.remove(self.inventory)
         # save result to db
         from app import create_app
-        from app.models import Host
+        from app.models import Machine
         with create_app().app_context():
             for host_id in self.host_ids:
-                host = Host.query.get(host_id)
+                host = Machine.query.get(host_id)
                 if ret_code == 0:
                     host.state = u'配置完成'
                 else:

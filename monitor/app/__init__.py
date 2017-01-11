@@ -23,4 +23,9 @@ def create_app(config=config):
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
+
+    @app.context_processor
+    def add_var():
+        return {'LOCAL_IP': config.NAGIOS_IP}
+
     return app

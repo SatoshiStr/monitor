@@ -27,14 +27,18 @@
                 <button type="button" class="btn btn-default btn-sm config_detail">查看详细</button>
             {%- endif %}</td>
             <td>
-                <button type="button" class="btn btn-primary btn-sm config_host">配置主机</button>
-                <button type="button" class="btn btn-success btn-sm show_service_modal">监控项目</button>
+                <button type="button" class="btn btn-primary btn-sm config_host">部署监控Agent</button>
+                <button type="button" class="btn btn-success btn-sm show_service_modal">监控指标</button>
                 <input type="hidden" value="{{ '%s;%s' % (host.selected_service_names,
                                                           host.left_service_names) }}">
                 <input type="hidden" value="{{ host.id }}">
+                <button type="button" class="btn btn-success btn-sm show_group_modal">主机组</button>
                 <button type="button" class="btn btn-danger btn-sm remove_host">删除主机</button>
+
             </td>
         </tr>
+        <input type="hidden" id="host-{{ host.id }}-group" value="
+        {{- host.groups | join(',', attribute='name') }}">
         {% endfor %}
         </tbody>
     </table>
@@ -54,8 +58,18 @@
                 <h4 class="modal-title" id="service_modal_title">监控项目</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" role="form" id="service_form">
+                <form class="form-horizontal" role="form" >
                 </form>
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th>服务</th><th>warning阀值</th><th>critical阀值</th>
+                    </tr>
+                    </thead>
+                    <tbody id="service_form">
+
+                    </tbody>
+                </table>
                 <input type="hidden" id="service_host_id">
             </div>
             <div class="modal-footer">
@@ -122,6 +136,24 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" id="config_modal_close">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="move_group_modal">
+    <input id="group_list" value="{{ group_list | join(',', attribute='name') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">把主机添加到主机组</h4>
+            </div>
+            <div class="modal-body" id="group_selector">
+
+            </div>
+            <input type="hidden" value="" id="move_group_modal_host_id">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="move_group_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="move_group_modal_commit">提交更改</button>
             </div>
         </div>
     </div>

@@ -12,7 +12,7 @@ import time
 
 from config import config
 from app import create_app
-from app.models import Host, HostGroup, Service
+from app.models import Machine, Group, Service
 
 CONFIG_FILE_PREFIX = config.NAGIOS_CONFIG_FILE_PREFIX
 HOST_CONFIG_FILE = config.NAGIOS_HOST_CONFIG_FILE
@@ -76,9 +76,9 @@ class NagiosSync(threading.Thread):
                         else:
                             prefix = 'Standalone'
                         if service.tag == u'虚拟机':
-                            prefix = service.prefix
                             for vm in vms:
                                 vm_id = vm['id']
+                                prefix = service.prefix + '.' + vm_id
                                 add_service(host.hostname, vm_id[:8] + service.name,
                                             service.command % vm_id, prefix)
                         else:
@@ -92,59 +92,7 @@ class NagiosSync(threading.Thread):
         sync_running = False
 
 
-def parse_result(text):
-    text = text.strip()
-    lines = text.split('\n')
-    keys = parse_line(lines[1])
-    resutls = []
-    for line in lines[3:-1]:
-        d = {}
-        items = parse_line(line)
-        for key, value in zip(keys, items):
-            d[key] = value
-        resutls.append(d)
-    return resutls
 
-
-def parse_line(line):
-    line = line[1:-1]
-    items = line.split('|')
-    for i, item in enumerate(items):
-        items[i] = item.strip()
-    return items
-
-
-def run_command(command):
-    if isinstance(command, str) or isinstance(command, unicode):
-        command = command.split()
-    proc = Popen(command, stdout=PIPE)
-    stdout = proc.stdout.read()
-    ret_code = proc.wait()
-    if ret_code == 0:
-        return parse_result(stdout)
-    return 'fail'
-
-
-def get_all_vms():
-    results = run_command('nova list')
-    vms = []
-    for result in results:
-        vm = {
-            'id': result['ID'],
-            'name': result['Name']
-        }
-        vms.append(vm)
-    return vms
-
-
-def set_env():
-    # read env
-    with open('/openrc') as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                key, value = line.split()[1].split('=')
-                os.environ[key] = value
 
 
 def clear_file(file_name):

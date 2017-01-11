@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>主机组 {{ group.name }}</h3>
+<div>共{{ group.machines | length }}台主机</div>
+<div>{{ group.desc }}</div>
+<hr>
+<div>
+    <table class="table table-bordered table-hover table-striped">
+        <thead>
+        <tr>
+            <th>id</th>
+            <th>虚拟机id</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for host in hosts %}
+        <tr>
+            <td>{{ host.id }}</td>
+            <td>{{ host.vm_id }}</td>
+            <td>
+                <button type="button" class="btn btn-success btn-sm show_group_modal">虚拟机组</button>
+                <input type="hidden" value="{{ host.id }}">
+            </td>
+        </tr>
+        <input type="hidden" id="host-{{ host.id }}-group" value="
+        {{- host.groups | join(',', attribute='name') }}">
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div>
+    <div class="col-md-offset-3 col-md-6 text-center">
+        <button type="button" class="btn btn-primary" id="show_group_service">虚拟机组服务</button>
+        <button type="button" class="btn btn-primary" id="sync">同步配置到Nagios</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+
+<div class="modal fade" id="move_group_modal">
+    <input id="group_list" value="{{ group_list | join(',', attribute='name') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">把虚拟添加到虚拟机组</h4>
+            </div>
+            <div class="modal-body" id="group_selector">
+
+            </div>
+            <input type="hidden" value="" id="move_group_modal_host_id">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="move_group_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="move_group_modal_commit">提交更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="group_service_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">监控项目</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form" id="group_service_form">
+                    {% for service in selected_services %}
+                    <div class="checkbox">
+                        <label class="monitor_item_name">
+                            <input type="checkbox" checked>
+                            {{ service.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                    {% for service in left_services %}
+                    <div class="checkbox">
+                        <label class="monitor_item_name">
+                            <input type="checkbox">
+                            {{ service.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </form>
+                <input type="hidden" id="service_group_id" value="{{ group.id }}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="group_service_modal_close">关闭</button>
+                <button type="button" class="btn btn-primary" id="group_service_modal_submit">提交更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="config_modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Ansible 输出</h4>
+            </div>
+            <div class="modal-body" >
+                <pre id="config_stdout">
+
+                </pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="config_modal_close">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block footer_scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/root.js') }}"></script>
+    <style>
+        .config_detail {
+            margin-left: 7px;
+        }
+    </style>
+{% endblock %}

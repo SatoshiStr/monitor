@@ -2,7 +2,7 @@
 
 {% block content %}
 <h3>主机组 {{ group.name }}</h3>
-<div>共{{ group.host_sum }}台主机</div>
+<div>共{{ group.machines | length }}台主机</div>
 <div>{{ group.desc }}</div>
 <hr>
 <div>
@@ -26,26 +26,30 @@
             <td>{{ host.hostname }}</td>
             <td>{{ host.username }}</td>
             <td>{{ host.password }}</td>
-            <td class="">{{ host.state }}{%- if host.state in ('配置完成', '配置失败') -%}
+            <td class="">{{ host.state }}
+                {%- if host.state in ('配置完成', '配置失败') -%}
                 <button type="button" class="btn btn-default btn-sm config_detail">查看详细</button>
-            {%- endif %}</td>
+                {%- endif -%}
+            </td>
             <td>
-                <button type="button" class="btn btn-primary btn-sm config_host">配置主机</button>
-                <button type="button" class="btn btn-success btn-sm show_group_modal">移动主机</button>
+                <button type="button" class="btn btn-primary btn-sm config_host">部署监控Agent</button>
+                <button type="button" class="btn btn-success btn-sm show_group_modal">主机组</button>
                 <input type="hidden" value="{{ host.id }}">
                 <button type="button" class="btn btn-danger btn-sm remove_host">删除主机</button>
             </td>
         </tr>
+        <input type="hidden" id="host-{{ host.id }}-group" value="
+        {{- host.groups | join(',', attribute='name') }}">
         {% endfor %}
         </tbody>
     </table>
 </div>
 <div>
     <div class="col-md-offset-3 col-md-6 text-center">
-        <button type="button" class="btn btn-info" id="add_multiple_host">批量添加主机</button>
-        <button type="button" class="btn btn-info" id="config_all_host">配置所有主机</button>
-        <button type="button" class="btn btn-info" id="show_group_service">主机组服务</button>
-        <button type="button" class="btn btn-info" id="sync">同步配置到Nagios</button>
+        <button type="button" class="btn btn-primary" id="add_multiple_host">批量添加主机</button>
+        <button type="button" class="btn btn-primary" id="config_all_host">所有主机部署监控Agent</button>
+        <button type="button" class="btn btn-primary" id="show_group_service">主机组服务</button>
+        <button type="button" class="btn btn-primary" id="sync">同步配置到Nagios</button>
     </div>
 </div>
 {% endblock %}
@@ -106,28 +110,14 @@
     </div>
 </div>
 <div class="modal fade" id="move_group_modal">
+    <input id="group_list" value="{{ group_list | join(',', attribute='name') }}">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">把主机移动到主机组</h4>
+                <h4 class="modal-title">把主机添加到主机组</h4>
             </div>
             <div class="modal-body" id="group_selector">
-                <div class="radio">
-                    <label>
-                        <input type="radio" name="optionsRadios" value="option1">
-                        移出主机组
-                    </label>
-                </div>
-                {% for grp in group_list %}
-                    {% if grp.id != group.id %}
-                <div class="radio">
-                    <label>
-                        <input type="radio" name="optionsRadios" value="option1">
-                        移到主机组{{ grp.name }}
-                    </label>
-                </div>
-                    {% endif %}
-                {% endfor %}
+
             </div>
             <input type="hidden" value="" id="move_group_modal_host_id">
             <div class="modal-footer">

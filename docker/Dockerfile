@@ -23,12 +23,11 @@ COPY check_ganglia /usr/lib/nagios/plugins/
 RUN chmod a+x /usr/lib/nagios/plugins/check_ganglia
 # check openstack vm
 COPY openrc /openrc
-RUN apt-get install -y --force-yes software-properties-common && \
-    add-apt-repository cloud-archive:mitaka -y && \
-    apt-get update && \
-    apt-get install -y python-ceilometerclient python-novaclient
+
 COPY check_vm /usr/lib/nagios/plugins/
-RUN chmod a+x /usr/lib/nagios/plugins/check_vm && chmod a+r /openrc
+RUN chmod a+x /usr/lib/nagios/plugins/check_vm && chmod a+r /openrc && \
+    mkdir -p /etc/nagios3/vm_cache/ && \
+    chown nagios3:nagios3 /etc/nagios3/vm_cache/
 
 COPY install_graphite.sh /root/
 RUN /bin/bash /root/install_graphite.sh
@@ -41,6 +40,11 @@ RUN apt-get install -y python-setuptools libmysqlclient-dev python-mysqldb vim &
  
 COPY setup_monitor_config_system.sh /root/
 RUN /bin/bash /root/setup_monitor_config_system.sh
+
+RUN apt-get install -y --force-yes software-properties-common && \
+    add-apt-repository cloud-archive:mitaka -y && \
+    apt-get update && \
+    apt-get install -y python-ceilometerclient python-novaclient
 
 COPY startup.sh /root/
 CMD ["/bin/bash", "/root/startup.sh"]
