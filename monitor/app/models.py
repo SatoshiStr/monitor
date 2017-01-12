@@ -32,7 +32,8 @@ class Group(IdMixin, Model):
                                secondary='group_machine_map',
                                backref=db.backref('groups', lazy='joined'),
                                lazy='joined', order_by='Machine.id')
-    services = db.relationship('GroupService', lazy='joined')
+    services = db.relationship('GroupService', lazy='joined',
+                               cascade='all, delete-orphan')
 
     @staticmethod
     def create_host_group(name, desc):
@@ -55,6 +56,8 @@ class Group(IdMixin, Model):
                 to_deletes.append(machine)
         for machine in to_deletes:
             machine.delete()
+        for gm_map in GroupMachineMap.query.filter_by(group_id=self.id).all():
+            gm_map.delete()
         db.session.delete(self)
 
     def add_machine(self, machine):
@@ -92,7 +95,8 @@ class Machine(IdMixin, Model):
     # vm
     vm_id = db.Column(db.String(50))
 
-    services = db.relationship('MachineService', lazy='joined')
+    services = db.relationship('MachineService', lazy='joined',
+                               cascade='all, delete-orphan')
 
     @staticmethod
     def create_host(ip, hostname, username, password):
@@ -326,3 +330,18 @@ class GroupService(ServiceMap):
     __tablename__ = 'group_service'
     group_id = db.Column(db.Integer, db.ForeignKey(Group.id), primary_key=True)
 
+
+class Alarm(IdMixin, CreateTimeMixin, Model):
+    host_id = db.Column(db.Integer, db.ForeignKey(Machine.id))
+    subject = db.Column(db.String(100))
+    recipient = db.Column(db.String(100))
+    content = db.Column(db.String(1000))
+
+
+class Mail(IdMixin, Model):
+    mail = db.Column(db.String(100))
+    desc = db.Column(db.String(100))
+
+
+class MailServer(IdMixin, Model):
+    data = db.Column(db.String(1000))

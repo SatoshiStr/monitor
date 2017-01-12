@@ -18,6 +18,8 @@ RUN /bin/bash /root/install_ganglia.sh
 # nagios
 COPY install_nagios.sh /root/
 RUN /bin/bash /root/install_nagios.sh
+COPY commands.cfg /etc/nagios3/
+COPY send_notify.py /usr/bin/
 # check_ganglia
 COPY check_ganglia /usr/lib/nagios/plugins/
 RUN chmod a+x /usr/lib/nagios/plugins/check_ganglia

@@ -23,7 +23,8 @@
                 <li class="{{ root_active }}"><a href="/">首页</a></li>
                 <li class="{{ group_list_active }}"><a href="{{ url_for('main.host_group_list') }}">主机组</a></li>
                 <li class="{{ vm_list_active }}"><a href="{{ url_for('main.vm_group_list') }}">虚拟机</a></li>
-                <li class="{{ vm_list_active }}"><a href="{{ url_for('main.alarm_list') }}">告警</a></li>
+                <li class="{{ alarm_active }}"><a href="{{ url_for('main.alarm_list') }}">告警</a></li>
+                <li class="{{ mail_list_active }}"><a href="{{ url_for('main.show_mail') }}">邮件设置</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="{{ 'http://%s:3000' % LOCAL_IP }}">仪表盘</a></li>

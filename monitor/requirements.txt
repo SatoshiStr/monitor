@@ -4,3 +4,4 @@ flask-sqlalchemy
 Flask-WTF
 Flask-Migrate
 MySQL-python
+flask-mail

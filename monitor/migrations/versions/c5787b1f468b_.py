@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 9e3526047f9f
+Revision ID: c5787b1f468b
 Revises: 
-Create Date: 2017-01-10 16:34:45.431930
+Create Date: 2017-01-12 23:10:48.935388
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9e3526047f9f'
+revision = 'c5787b1f468b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,9 +23,7 @@ def upgrade():
     sa.Column('type', sa.Enum('Host', 'VM'), nullable=False),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('desc', sa.String(length=50), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('desc'),
-    sa.UniqueConstraint('name')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('machine',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -42,6 +40,17 @@ def upgrade():
     sa.UniqueConstraint('hostname'),
     sa.UniqueConstraint('ip')
     )
+    op.create_table('mail',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('mail', sa.String(length=100), nullable=True),
+    sa.Column('desc', sa.String(length=100), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('mail_server',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('data', sa.String(length=1000), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('service',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=50), nullable=False),
@@ -52,6 +61,16 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('command'),
     sa.UniqueConstraint('name')
+    )
+    op.create_table('alarm',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.Column('host_id', sa.Integer(), nullable=True),
+    sa.Column('subject', sa.String(length=100), nullable=True),
+    sa.Column('recipient', sa.String(length=100), nullable=True),
+    sa.Column('content', sa.String(length=1000), nullable=True),
+    sa.ForeignKeyConstraint(['host_id'], [u'machine.id'], ),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('group_machine_map',
     sa.Column('group_id', sa.Integer(), nullable=False),
@@ -86,7 +105,10 @@ def downgrade():
     op.drop_table('machine_service')
     op.drop_table('group_service')
     op.drop_table('group_machine_map')
+    op.drop_table('alarm')
     op.drop_table('service')
+    op.drop_table('mail_server')
+    op.drop_table('mail')
     op.drop_table('machine')
     op.drop_table('group')
     # ### end Alembic commands ###

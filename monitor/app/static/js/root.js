@@ -354,3 +354,24 @@ $('#sync').click(function() {
         }
     });
 });
+
+
+// ########### mail
+$('.delete-mail').click(function() {
+    var mail_id = $(this).attr('mail_id');
+    $.ajax({
+        type: 'POST',
+        url: "/alarm/mail/"+mail_id+'/remove',
+        data: '{}',
+        contentType: 'application/json; charset=UTF-8',
+        dataType: 'json',
+        success: function (data) {
+            location.reload();
+        },
+        error: function (xhr, type) {
+            console.log("提交数据失败！");
+            console.log(xhr);
+            console.log(type);
+        }
+    });
+});

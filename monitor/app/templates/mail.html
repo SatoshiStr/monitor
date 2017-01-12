@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>接收告警通知的邮箱</h3>
+<hr>
+<div>
+{% for mail in mails %}
+    <div>
+        <div>
+            {{ mail.mail }}
+        </div>
+        <div>
+            {{ mail.desc }}
+        </div>
+    </div>
+    <button type="button" class="btn btn-danger delete-mail" mail_id="{{ mail.id }}">删除邮件地址</button>
+    <hr>
+{% endfor %}
+</div>
+<form class="form-horizontal " role="form" action="{{ url_for('main.add_mail') }}" method="post">
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">邮件地址</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ mail_form.mail(class='form-control', required='') }}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">描述</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ mail_form.desc(class='form-control', required='') }}
+        </div>
+    </div>
+    {{ mail_form.csrf_token(type='hidden') }}
+    <div class="form-group">
+        <div class="col-sm-12 col-lg-offset-3 col-lg-5 text-center">
+            <button type="submit" class="btn btn-info"> 添加邮件 </button>
+        </div>
+    </div>
+</form>
+<hr>
+<form class="form-horizontal " role="form" action="{{ url_for('main.change_mail_server') }}" method="post">
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">邮件服务器</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ server_form.server(class='form-control', required='') }}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">邮件服务器端口</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ server_form.port(class='form-control', required='') }}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">使用SSL</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ server_form.use_ssl(required='') }}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">用户名</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ server_form.username(class='form-control', required='') }}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-4 col-lg-offset-2 col-lg-2 control-label">密码</label>
+        <div class="col-sm-8 col-lg-4">
+            {{ server_form.password(class='form-control', required='') }}
+        </div>
+    </div>
+    {{ server_form.csrf_token(type='hidden') }}
+    <div class="form-group">
+        <div class="col-sm-12 col-lg-offset-3 col-lg-5 text-center">
+            <button type="submit" class="btn btn-info"> 确认修改 </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block footer_scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/root.js') }}"></script>
+{% endblock %}

@@ -1,7 +1,11 @@
 # coding=utf-8
+import json
+from flask import current_app
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, IntegerField, ValidationError
-from wtforms.validators import DataRequired, IPAddress, NumberRange
+from wtforms import StringField, SubmitField, IntegerField, ValidationError,\
+    RadioField
+from wtforms.validators import DataRequired, IPAddress, NumberRange, Email
+from app.models import MailServer
 
 
 class HostForm(FlaskForm):
@@ -49,3 +53,35 @@ class MultiHostForm(FlaskForm):
                 raise ValidationError(u'IP前缀 格式错误')
             if num < 1 or num > 255:
                 raise ValidationError(u'IP前缀 格式错误')
+
+
+class MailForm(FlaskForm):
+    mail = StringField(u'邮箱地址', validators=[DataRequired(), Email()])
+    desc = StringField(u'描述', validators=[DataRequired()])
+    submit = SubmitField(u'添加')
+
+
+class MailServerForm(FlaskForm):
+    server = StringField('', validators=[DataRequired()])
+    port = IntegerField('', validators=[DataRequired()])
+    use_ssl = RadioField('', choices=[('use', u'使用ssl'), ('not', u'不使用ssl')])
+    username = StringField('', validators=[DataRequired()])
+    password = StringField('', validators=[DataRequired()])
+
+    def __init__(self, init=True):
+        if init:
+            super(MailServerForm, self).__init__()
+            mail_server = MailServer.query.first()
+            if not mail_server:
+                mail_config = {}
+            else:
+                mail_config = json.loads(mail_server.data)
+            print mail_config
+            self.server.data=mail_config.get('MAIL_SERVER',
+                                             'smtp.163.com')
+            self.use_ssl.data = mail_config.get('MAIL_USE_SSL', 'use')
+            self.port.data=mail_config.get('MAIL_PORT', 465)
+            self.username.data=mail_config.get('MAIL_USERNAME', '')
+            self.password.data=mail_config.get('MAIL_PASSWORD', '')
+        else:
+            super(MailServerForm, self).__init__()

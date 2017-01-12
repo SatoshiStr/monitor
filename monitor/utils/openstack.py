@@ -2,18 +2,19 @@
 import os
 from subprocess import Popen, PIPE
 
+
 def parse_result(text):
     text = text.strip()
     lines = text.split('\n')
     keys = parse_line(lines[1])
-    resutls = []
+    results = []
     for line in lines[3:-1]:
         d = {}
         items = parse_line(line)
         for key, value in zip(keys, items):
             d[key] = value
-        resutls.append(d)
-    return resutls
+        results.append(d)
+    return results
 
 
 def parse_line(line):
@@ -32,34 +33,19 @@ def run_command(command):
     ret_code = proc.wait()
     if ret_code == 0:
         return parse_result(stdout)
-    return 'fail'
 
 
 def get_all_vms():
-    # results = run_command('nova list')
-    results = [
-        {
-            'ID': '1',
-            'Name': 'ins1',
-            'Host': 'compute1'
-        },
-        {
-            'ID': '2',
-            'Name': 'ins2',
-            'Host': 'compute1'
-        },
-        {
-            'ID': '3',
-            'Name': 'ins3',
-            'Host': 'control'
-        }
-    ]
+    results = run_command(
+        'nova list --fields OS-EXT-SRV-ATTR:host,OS-EXT-SRV-ATTR:hostname,hostId,tenant_id')
     vms = []
     for result in results:
         vm = {
             'id': result['ID'],
-            'name': result['Name'],
-            'host': result['Host']
+            'name': result['OS-EXT-SRV-ATTR: Hostname'],
+            'host': result['OS-EXT-SRV-ATTR: Host'],
+            'host_id': result['hostId'],
+            'tenant_id': result['Tenant Id'],
         }
         vms.append(vm)
     return vms
