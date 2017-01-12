@@ -10,6 +10,7 @@
             {{- group.name }}</a></h4>
         <div>共{{ group.machines | length }}台主机</div>
         <div>{{ group.desc }}</div>
+        <button type="button" class="btn btn-danger delete-group" group_id="{{ group.id }}">删除主机组</button>
     </div>
     <hr>
 {% endfor %}
@@ -34,4 +35,9 @@
         </div>
     </div>
 </form>
+{% endblock %}
+
+{% block footer_scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/root.js') }}"></script>
 {% endblock %}

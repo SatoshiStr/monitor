@@ -42,11 +42,14 @@ def add_group():
                     url_for('main.host_group_list'))
 
 
-@main.route('/host-group/<int:group_id>/remove', methods=['POST'])
+@main.route('/group/<int:group_id>/remove', methods=['POST'])
 def remove_group(group_id):
     group = Group.query.get_or_404(group_id)
+    if group.type == 'Host':
+        flash(u'成功删除主机组 %s' % group.name)
+    else:
+        flash(u'成功删除虚拟机组 %s' % group.name)
     group.delete()
-    flash(u'成功删除主机组 %s' % group.name)
     return '{}'
 
 
@@ -99,12 +102,13 @@ def create_hosts_at_group(group_id):
 def change_group_service(group_id):
     group = Group.query.get_or_404(group_id)
     data = request.get_json()
+    print data
     new_services = []
     for item in data:
         new_service = Service.query.filter_by(name=item['name']).first()
         if new_service:
-            new_service.warn = item['warn']
-            new_service.critic = item['critic']
+            new_service.warn = item['warn'] or None
+            new_service.critic = item['critic'] or None
             new_services.append(new_service)
     group.update_service(new_services)
     return '{}'

@@ -33,7 +33,7 @@ def vm_group_detail(group_id):
     group = Group.query.get_or_404(group_id)
     group_list = Group.query.filter_by(type='VM').order_by(Group.id).all()
     vms = group.machines
-    left_services = remove_exist(Service.get_all(), group.services)
+    left_services = remove_exist(Service.get_all(vm_only=True), group.services)
     return render_template('vm_group_detail.html', group=group, hosts=vms,
                            group_list=group_list,
                            left_services=left_services,
@@ -54,10 +54,9 @@ def refresh_vm():
         q_grp = Group.query.filter_by(type='VM', name=grp).first()
         if q_grp:
             # delete the extra vm in q_grp
-            print q_grp.name
             for vm in q_grp.machines:
-                print vm.vm_id
-                if vm.vm_id not in vm_dict:
+                if vm.vm_id not in vm_dict or\
+                                vm_dict[vm.vm_id]['host'] != q_grp.name:
                     q_grp.remove_machine(vm)
         else:
             q_grp = Group.create_vm_group(grp, '宿主机 '+grp)

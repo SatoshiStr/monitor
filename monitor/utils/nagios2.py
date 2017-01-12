@@ -13,6 +13,7 @@ import time
 from config import config
 from app import create_app
 from app.models import Machine, Group, Service
+from utils.openstack import set_env, get_all_vms
 
 CONFIG_FILE_PREFIX = config.NAGIOS_CONFIG_FILE_PREFIX
 HOST_CONFIG_FILE = config.NAGIOS_HOST_CONFIG_FILE
@@ -45,54 +46,44 @@ class NagiosSync(threading.Thread):
         clear_file(HOST_CONFIG_FILE)
         clear_file(HOST_GROUP_CONFIG_FILE)
         clear_file(SERVICE_CONFIG_FILE)
-        # vm
-        set_env()
-        vms = get_all_vms()
         #
+        local_host = 'localhost'
         with create_app().app_context():
-            groups = HostGroup.query.all()
+            groups = Group.query.filter_by(type='Host').all()
             for group in groups:
-                host_names = [host.hostname for host in group.hosts]
+                host_names = [host.hostname for host in group.machines]
                 members = ','.join(host_names)
                 add_host_group(group.name, group.desc, members)
-            for host in Host.query.all():
-                add_host(host.hostname, host.ip,
-                         host.host_group.name if host.host_group else None)
-                if host.host_group:
-                    for service in host.host_group.services:
-                        if service.tag == u'虚拟机':
-                            # 跳过, 主机组不包含虚拟机的监控
-                            continue
-                        if service.prefix:
-                            prefix = host.host_group.name + '.' + service.prefix
-                        else:
-                            prefix = host.host_group.name
+            for host in Machine.query.filter_by(type='Host').all():
+                if host.is_monitor_host():
+                    local_host = host.hostname
+                prefix = 'Monitor.host'
+                add_host(host.hostname, host.ip, prefix)
+                if host.groups:
+                    for service in host.get_services(source='group'):
                         add_service(host.hostname, service.name,
                                     service.command, prefix)
                 else:
                     for service in host.services:
-                        if service.prefix:
-                            prefix = 'Standalone.' + service.prefix
-                        else:
-                            prefix = 'Standalone'
-                        if service.tag == u'虚拟机':
-                            for vm in vms:
-                                vm_id = vm['id']
-                                prefix = service.prefix + '.' + vm_id
-                                add_service(host.hostname, vm_id[:8] + service.name,
-                                            service.command % vm_id, prefix)
-                        else:
-                            add_service(host.hostname, service.name,
-                                        service.command, prefix)
+                        add_service(host.hostname, service.name,
+                                    service.command, prefix)
+            # vm
+            for vm in Machine.query.filter_by(type='VM').all():
+                prefix = 'Monitor.vm.' + vm.vm_id
+                if vm.groups:
+                    services = vm.get_services(source='group')
+                    for service in services:
+                        warn = service.warn if service.warn else -1
+                        critic = service.critic if service.critic else -1
+                        add_service(local_host, vm.vm_id[:8] + service.name,
+                                    service.command % (vm.vm_id, warn, critic),
+                                    prefix)
         # restart
         popen = Popen(['/etc/init.d/nagios3', 'restart'], stdout=PIPE)
         stdout = popen.stdout.read().decode('utf-8')
         ret_code = popen.wait()
         LOG.info(u'%d %s' % (ret_code, stdout))
         sync_running = False
-
-
-
 
 
 def clear_file(file_name):
@@ -117,11 +108,7 @@ def add_host_group(name, desc, members):
     add_config('hostgroup', config, HOST_GROUP_CONFIG_FILE)
 
 
-def add_host(host_name, ip, group_name=None):
-    if group_name:
-        prefix = 'Monitor.' + group_name
-    else:
-        prefix = 'Monitor.Standalone'
+def add_host(host_name, ip, prefix='Monitor'):
     config = [
         ('use', 'generic-host'),
         ('host_name', host_name),
@@ -136,16 +123,14 @@ def add_host(host_name, ip, group_name=None):
     add_config('host', config, HOST_CONFIG_FILE)
 
 
-def add_service(host_name, service_name, check_command, prefix):
-    if not prefix:
-        prefix = check_command
+def add_service(host_name, service_name, check_command, prefix='Monitor'):
     config = [
         ('use', 'generic-service'),
         ('host_name', host_name),
         ('service_description', service_name),
         ('check_command', check_command),
         ('normal_check_interval', '1'),
-        ('_graphiteprefix', 'Monitor.'+prefix)
+        ('_graphiteprefix', prefix)
     ]
     add_config('service', config, SERVICE_CONFIG_FILE)
 
