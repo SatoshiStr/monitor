@@ -29,7 +29,7 @@ COPY openrc /openrc
 COPY check_vm /usr/lib/nagios/plugins/
 RUN chmod a+x /usr/lib/nagios/plugins/check_vm && chmod a+r /openrc && \
     mkdir -p /etc/nagios3/vm_cache/ && \
-    chown nagios3:nagios3 /etc/nagios3/vm_cache/
+    chown nagios:nagios /etc/nagios3/vm_cache/
 
 COPY install_graphite.sh /root/
 RUN /bin/bash /root/install_graphite.sh

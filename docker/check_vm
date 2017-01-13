@@ -101,10 +101,10 @@ def get_vm_resource_id(vm_id, name):
 
 def get_vm_sample(vm_id, meter):
     resource_id = get_vm_resource_id(vm_id, meter)
-    time_line = datetime.now() - timedelta(minutes=30)
+    time_line = datetime.utcnow() - timedelta(minutes=30)
     timestamp = time_line.strftime('%Y-%m-%dT%H:%M:%S')
     command = ("ceilometer sample-list -l 1 -m %s -q "
-               "resource_id=%stimestamp>%s ") % \
+               "resource_id=%s;timestamp>%s ") % \
               (meter, resource_id, timestamp)
     result = run_command(command)
     if not result:
