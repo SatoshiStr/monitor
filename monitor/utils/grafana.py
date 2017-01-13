@@ -45,37 +45,36 @@ def init_data_source():
 
 
 class Dashboard(object):
-    def __init__(self, name):
+    def __init__(self, title):
         self._dashboard = {
-            "id": None,
-            "title": name,
-            "tags": [],
-            "style": "light",
-            "timezone": "browser",
-            "editable": True,
-            "hideControls": False,
-            "graphTooltip": 1,
+            "annotations": {
+                "list": []
+            },
+            "editable": true,
+            "gnetId": null,
+            "graphTooltip": 0,
+            "hideControls": false,
+            "id": null,
+            "links": [],
             "rows": [],
+            "schemaVersion": 14,
+            "style": "light",
+            "tags": [],
+            "templating": {
+                "enable": true,
+                "list": []
+            },
             "time": {
                 "from": "now-6h",
                 "to": "now"
             },
             "timepicker": {
-                "time_options": [],
-                "refresh_intervals": []
+                "refresh_intervals": [],
+                "time_options": []
             },
-            "templating": {
-                "enable": True,
-                "list": []
-            },
-            "annotations": {},
-            "schemaVersion": 7,
-            "version": 0,
-            "links": []
-        }
-        self._framework = {
-            "dashboard": self._dashboard,
-            "overwrite": True
+            "timezone": "browser",
+            "title": title,
+            "version": 2
         }
 
     def add_custom_template(self, name, options):
@@ -125,22 +124,25 @@ class Dashboard(object):
         self._dashboard['rows'].append(row)
 
     def sync(self):
-        return post_json('/api/dashboards/db', self._framework)
+        framework = {
+            "dashboard": self._dashboard,
+            "overwrite": True
+        }
+        return post_json('/api/dashboards/db', framework)
 
 
 class Row(object):
     def __init__(self, title, show_title=True, repeat=None, height=130):
         self._row = {
-            "collapse": False,
-            "editable": True,
+            "collapse": false,
             "height": height,
-            "title": title,
-            "showTitle": show_title,
-            "titleSize": "h6",
-            "repeat": repeat,
-            "repeatIteration": None,
-            "repeatRowId": None,
             "panels": [],
+            "repeat": "vm",
+            "repeatIteration": null,
+            "repeatRowId": null,
+            "showTitle": show_title,
+            "title": title,
+            "titleSize": "h6"
         }
 
     def add_panel(self, panel):
@@ -148,11 +150,14 @@ class Row(object):
 
 
 class Panel(object):
+    panel_id_counter = 1
     pass
 
 
 class SingleStat(Panel):
-    def __init__(self, title, target="Monitor.vm.$vm.localhost.cpu_util"):
+    def __init__(self, title, target):
+        id = Panel.panel_id_counter
+        Panel.panel_id_counter += 1
         self._single_stat = {
           "cacheTimeout": null,
           "colorBackground": false,
@@ -171,7 +176,7 @@ class SingleStat(Panel):
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": 1,
+          "id": id,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -199,7 +204,7 @@ class SingleStat(Panel):
               "to": "null"
             }
           ],
-          "span": 3,
+          "span": 2,
           "sparkline": {
             "fillColor": "rgba(31, 118, 189, 0.18)",
             "full": false,
@@ -226,14 +231,18 @@ class SingleStat(Panel):
           "valueName": "avg"
         }
 
-
+counter = 20
 dashboard = Dashboard('autoDash')
 for vm in ('74bc75b2-0b65-4eea-a943-add28d54d9a6',
            'f0bb0224-dab6-4531-bf63-94fe2d5b7686'):
-    row = Row('$vm', repeat='vm')
-    for meter in ('cpu_util', 'memory')
-        panel = SingleStat()
+    row = Row(vm)
+    for meter in ('cpu_util', 'memory', 'memory.usage', 'disk.read.bytes.rate',
+              'disk.write.bytes.rate', 'disk.capacity', 'disk.usage',
+              'network.incoming.bytes.rate', 'network.outgoing.bytes.rate'):
+        target = "Monitor.vm.%s.localhost.%s" % (vm, meter.replace('.', '_'))
+        panel = SingleStat(title=meter, target=target)
         row.add_panel(panel._single_stat)
-dashboard.add_row(row._row)
-# dashboard.add_custom_template('vm', )
+    dashboard.add_row(row._row)
+
 print dashboard.sync()
+
