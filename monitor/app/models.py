@@ -156,15 +156,15 @@ class Machine(IdMixin, Model):
             filter_by(machine_id=self.id, service_id=service_id).first()
         service.delete()
 
-    def get_services(self, source):
-        if source == 'group':
+    def get_services(self, source=None):
+        if self.groups:
             service_dict = {}
             for group in self.groups:
                 for service in group.services:
                     service_dict[service.service_id] = service
             return service_dict.values()
-        elif source == 'self':
-            pass
+        else:
+            return self.services
 
 
 def update_service(self, services):

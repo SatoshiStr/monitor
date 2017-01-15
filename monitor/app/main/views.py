@@ -2,7 +2,7 @@
 import logging
 from sqlalchemy import or_
 from flask import render_template, flash, redirect, url_for, request, jsonify
-from utils import nagios2, ansible
+from utils import nagios2, ansible, grafana
 from app.models import Machine, Service, Group
 from . import main
 from .forms import HostForm
@@ -41,8 +41,8 @@ def add_host():
 def remove_host(host_id):
     host = Machine.query.get_or_404(host_id)
     flash(u'成功删除主机 %s' % host.ip)
-    if host.host_group_id:
-        host.host_group.remove_host(host)
+    # if host.host_group_id:
+    #     host.host_group.remove_host(host)
     host.delete()
     return '{}'
 
@@ -83,5 +83,6 @@ def get_config_detail(host_id):
 @main.route('/sync', methods=['POST'])
 def sync():
     nagios2.sync()
-    flash(u'开始同步Nagios配置')
+    grafana.sync_all()
+    flash(u'开始同步配置')
     return '{}'

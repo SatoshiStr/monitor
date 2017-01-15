@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 set -x
-
 /etc/init.d/mysql restart
 
 service ganglia-monitor restart

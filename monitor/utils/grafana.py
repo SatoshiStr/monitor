@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
 from subprocess import Popen, PIPE
+from app.models import Machine, Group
 
 MONITOR_IP = '127.0.0.1'
 GRAFANA_USER = 'admin'
@@ -151,13 +152,14 @@ class Row(object):
 
 class Panel(object):
     panel_id_counter = 1
-    pass
+    def __init__(self):
+        self.id = Panel.panel_id_counter
+        Panel.panel_id_counter += 1
 
 
 class SingleStat(Panel):
-    def __init__(self, title, target):
-        id = Panel.panel_id_counter
-        Panel.panel_id_counter += 1
+    def __init__(self, title, target, span=3):
+        super(SingleStat, self).__init__()
         self._single_stat = {
           "cacheTimeout": null,
           "colorBackground": false,
@@ -176,7 +178,7 @@ class SingleStat(Panel):
             "thresholdLabels": false,
             "thresholdMarkers": true
           },
-          "id": id,
+          "id": self.id,
           "interval": null,
           "links": [],
           "mappingType": 1,
@@ -204,7 +206,7 @@ class SingleStat(Panel):
               "to": "null"
             }
           ],
-          "span": 2,
+          "span": span,
           "sparkline": {
             "fillColor": "rgba(31, 118, 189, 0.18)",
             "full": false,
@@ -231,18 +233,163 @@ class SingleStat(Panel):
           "valueName": "avg"
         }
 
-counter = 20
-dashboard = Dashboard('autoDash')
-for vm in ('74bc75b2-0b65-4eea-a943-add28d54d9a6',
-           'f0bb0224-dab6-4531-bf63-94fe2d5b7686'):
-    row = Row(vm)
-    for meter in ('cpu_util', 'memory', 'memory.usage', 'disk.read.bytes.rate',
-              'disk.write.bytes.rate', 'disk.capacity', 'disk.usage',
-              'network.incoming.bytes.rate', 'network.outgoing.bytes.rate'):
-        target = "Monitor.vm.%s.localhost.%s" % (vm, meter.replace('.', '_'))
-        panel = SingleStat(title=meter, target=target)
-        row.add_panel(panel._single_stat)
+
+class Graph(Panel):
+    def __init__(self, title, target, span=12):
+        super(Graph, self).__init__()
+        self._graph = {
+          "aliasColors": {},
+          "bars": false,
+          "datasource": "monitor",
+          "fill": 1,
+          "id": self.id,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "span": span,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "refId": "A",
+              "target": target
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": title,
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ]
+        }
+
+
+def create_stat_list(title, machines):
+    local_host = 'localhost'
+    dashboard = Dashboard(title)
+    for machine in machines:
+        row = Row(machine.hostname if machine.type == 'Host' else machine.vm_id)
+        for service in machine.get_services():
+            if machine.type == 'Host':
+                meter = service.command.split('!')[1]
+                target = 'Monitor.host.%s.%s' % (machine.hostname, meter)
+            else:
+                meter = service.command.split('!')[2].replace('.', '_')
+                target = 'Monitor.vm.%s.%s.%s' % (machine.vm_id, local_host,
+                                                  meter)
+            panel = SingleStat(title=meter, target=target, span=2)
+            row.add_panel(panel._single_stat)
+        dashboard.add_row(row._row)
+    result = dashboard.sync()
+    print result
+    return result
+
+
+def create_detail_graph(machine):
+    local_host = 'localhost'
+    if machine.type == 'Host':
+        title = u'主机-' + machine.hostname
+    else:
+        title = u'VM-' + machine.vm_id
+    dashboard = Dashboard(title)
+    row = Row(title, height=350)
+    for service in machine.get_services():
+        if machine.type == 'Host':
+            meter = service.command.split('!')[1]
+            target = 'Monitor.host.%s.%s' % (machine.hostname, meter)
+        else:
+            meter = service.command.split('!')[2].replace('.', '_')
+            target = 'Monitor.vm.%s.%s.%s' % (machine.vm_id, local_host,
+                                              meter)
+        panel = Graph(title=meter, target=target, span=6)
+        row.add_panel(panel._graph)
     dashboard.add_row(row._row)
+    return dashboard.sync()
 
-print dashboard.sync()
+# print init_data_source()
 
+#
+def add_host_list():
+    hosts = ('f', 'gg3', 'guj', 'hadark')
+    configs = []
+    for meter in ('pl', 'rta'):
+        configs.append({
+            'title': meter,
+            'target': 'Monitor.host.%s.' + meter
+        })
+    return create_stat_list('host-list', hosts, configs)
+
+
+def add_host_detail():
+    hostname = 'local'
+    configs = []
+    for meter in ('load_one', 'load_five', 'load_fifteen', 'proc_total',
+                  'swap_free'):
+        configs.append({
+            'title': meter,
+            'target': 'Monitor.host.%s.%s' % (hostname, meter),
+            'span': 6
+        })
+    return create_detail_graph('detail-%s' % hostname, configs)
+
+
+
+def sync_all():
+    # 为每个group、全部vm、全部host创建single-stat列表仪表盘
+    all_hosts = Machine.query.filter_by(type='Host').all()
+    create_stat_list(u'全部主机', all_hosts)
+    all_vms = Machine.query.filter_by(type='VM').all()
+    create_stat_list(u'全部VM', all_vms)
+    host_groups = Group.query.filter_by(type='Host').all()
+    for group in host_groups:
+        create_stat_list(u'主机组-%s' % group.name, group.machines)
+    vm_groups = Group.query.filter_by(type='VM').all()
+    for group in vm_groups:
+        create_stat_list(u'VM组-%s' % group.name, group.machines)
+    # 为每台vm、host创建graph详细仪表板
+    for host in all_hosts:
+        create_detail_graph(host)
+    for vm in all_vms:
+        create_detail_graph(vm)
