@@ -36,6 +36,9 @@ RUN /bin/bash /root/install_graphite.sh
 
 COPY install_grafana.sh /root/
 RUN /bin/bash /root/install_grafana.sh
+# overwrite
+COPY grafana_click.js /usr/share/grafana/public/app/my.js
+COPY grafana_index.html /usr/share/grafana/public/views/index.html
 
 # config system
 RUN apt-get install -y python-setuptools libmysqlclient-dev python-mysqldb vim && easy_install pip
