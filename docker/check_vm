@@ -130,6 +130,22 @@ if __name__ == '__main__':
     #
     vm_id = sys.argv[1]
     meter = sys.argv[2]
+    if len(sys.argv) >= 4:
+        try:
+            warn = float(sys.argv[3])
+        except ValueError as e:
+            print e
+            warn = None
+    else:
+        warn = None
+    if len(sys.argv) >= 5:
+        try:
+            critic = float(sys.argv[3])
+        except ValueError as e:
+            print e
+            critic = None
+    else:
+        critic = None
     sample = get_vm_sample(vm_id, meter)
     template = '%(name)s is %(value)s%(unit)s |%(name)s=%(value)s'
     if sample:
@@ -137,3 +153,10 @@ if __name__ == '__main__':
         print template % sample
     else:
         print 'No sample for ' + meter
+    try:
+        if warn is not None and float(sample.get('value', 0)) > warn:
+            sys.exit(1)
+        if critic is not None and float(sample.get('value', 0)) > critic:
+            sys.exit(2)
+    except Exception as e:
+        print e

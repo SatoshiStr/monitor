@@ -204,45 +204,81 @@ class Service(IdMixin, Model):
     """
     _physical = {
         u'CPU': [
-            (u'1分钟平均负载', 'check_ganglia!load_one!%s!%s', ''),
-            (u'5分钟平均负载', 'check_ganglia!load_five!%s!%s', ''),
-            (u'15分钟平均负载', 'check_ganglia!load_fifteen!%s!%s', ''),
-            (u'CPU空闲', 'check_ganglia!cpu_idle!%s!%s', ''),
+            {'name': u'1分钟平均负载', 'unit': '', 'rate': 1,
+             'command': 'check_ganglia!load_one!%s!%s',
+             },
+            {'name': u'5分钟平均负载', 'unit': '', 'rate': 1,
+             'command': 'check_ganglia!load_five!%s!%s'},
+            {'name': u'15分钟平均负载', 'unit': '', 'rate': 1,
+             'command': 'check_ganglia!load_fifteen!%s!%s'},
+            {'name': u'CPU空闲', 'unit': '%', 'rate': 1,
+             'command': 'check_ganglia!cpu_idle!%s!%s'},
         ],
         u'磁盘': [
-            (u'磁盘总空间', 'check_ganglia!disk_total!%s!%s', ''),
-            (u'磁盘空闲空间', 'check_ganglia!disk_free!%s!%s', ''),
+            {'name': u'磁盘总空间', 'unit': 'GB', 'gunit': 'decgbytes', 'rate': 1,
+             'command': 'check_ganglia!disk_total!%s!%s'},
+            {'name': u'磁盘空闲空间', 'unit': 'GB', 'gunit': 'decgbytes', 'rate': 1,
+             'command': 'check_ganglia!disk_free!%s!%s'},
         ],
         u'内存': [
-            (u'内存总空间', 'check_ganglia!mem_total!%s!%s', ''),
-            (u'内存空闲空间', 'check_ganglia!mem_free!%s!%s', ''),
-            (u'swap总空间', 'check_ganglia!swap_total!%s!%s', ''),
-            (u'swap空闲空间', 'check_ganglia!swap_free!%s!%s', ''),
+            {'name': u'内存总空间', 'unit': 'MB', 'gunit': 'deckbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!mem_total!%s!%s'},
+            {'name': u'内存空闲空间', 'unit': 'MB', 'gunit': 'deckbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!mem_free!%s!%s'},
+            {'name': u'swap总空间', 'unit': 'MB', 'gunit': 'deckbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!swap_total!%s!%s'},
+            {'name': u'swap空闲空间', 'unit': 'MB', 'gunit': 'deckbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!swap_free!%s!%s'},
         ],
         u'进程': [
-            (u'进程总数', 'check_ganglia!proc_total!%s!%s', ''),
-            (u'运行进程总数', 'check_ganglia!proc_run!%s!%s', ''),
+            {'name': u'进程总数', 'unit': '', 'rate': 1,
+             'command': 'check_ganglia!proc_total!%s!%s'},
+            {'name': u'运行进程总数', 'unit': '', 'rate': 1,
+             'command': 'check_ganglia!proc_run!%s!%s'},
         ],
         u'网络': [
-            (u'每秒收到的字节数', 'check_ganglia!bytes_in!%s!%s', ''),
-            (u'每秒发送的字节数', 'check_ganglia!bytes_out!%s!%s', ''),
+            {'name': u'每秒收到的字节数', 'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!bytes_in!%s!%s'},
+            {'name': u'每秒发送的字节数', 'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_ganglia!bytes_out!%s!%s'},
         ],
     }
     _cloud = {
         u'虚拟机': [
-            (u'虚拟机CPU使用率', 'check_vm!%s!cpu_util!%s!%s', 'vm'),
-            (u'虚拟机内存总空间', 'check_vm!%s!memory!%s!%s', 'vm'),
-            (u'虚拟机内存已使用空间', 'check_vm!%s!memory.usage!%s!%s', 'vm'),
-            (u'虚拟机磁盘每秒读取字节', 'check_vm!%s!disk.read.bytes.rate!%s!%s', 'vm'),
-            (u'虚拟机磁盘每秒写入字节', 'check_vm!%s!disk.write.bytes.rate!%s!%s', 'vm'),
-            (u'虚拟机磁盘总空间', 'check_vm!%s!disk.capacity!%s!%s', 'vm'),
-            (u'虚拟机磁盘已使用空间', 'check_vm!%s!disk.usage!%s!%s', 'vm'),
-            (u'虚拟机网络每秒流入字节', 'check_vm!%s!network.incoming.bytes.rate!%s!%s', 'vm'),
-            (u'虚拟机网络每秒流出字节', 'check_vm!%s!network.outgoing.bytes.rate!%s!%s', 'vm')
+            {'name': u'虚拟机CPU使用率',
+             'unit': '%', 'rate': 1,
+             'command': 'check_vm!%s!cpu_util!%s!%s'},
+            {'name': u'虚拟机内存总空间',
+             'unit': 'MB', 'gunit': 'decmbytes', 'rate': 1,
+             'command': 'check_vm!%s!memory!%s!%s'},
+            {'name': u'虚拟机内存已使用空间',
+             'unit': 'MB', 'gunit': 'decmbytes', 'rate': 1,
+             'command': 'check_vm!%s!memory.usage!%s!%s'},
+            {'name': u'虚拟机磁盘每秒读取字节',
+             'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_vm!%s!disk.read.bytes.rate!%s!%s'},
+            {'name': u'虚拟机磁盘每秒写入字节',
+             'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_vm!%s!disk.write.bytes.rate!%s!%s'},
+            {'name': u'虚拟机磁盘总空间',
+             'unit': 'MB', 'gunit': 'decbytes', 'rate': 1.0/1024/1024,
+             'command': 'check_vm!%s!disk.capacity!%s!%s'},
+            {'name': u'虚拟机磁盘已使用空间',
+             'unit': 'MB', 'gunit': 'decbytes', 'rate': 1.0/1024/1024,
+             'command': 'check_vm!%s!disk.usage!%s!%s'},
+            {'name': u'虚拟机网络每秒流入字节',
+             'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_vm!%s!network.incoming.bytes.rate!%s!%s'},
+            {'name': u'虚拟机网络每秒流出字节',
+             'unit': 'kb/s', 'gunit': 'decbytes', 'rate': 1.0/1024,
+             'command': 'check_vm!%s!network.outgoing.bytes.rate!%s!%s'}
         ]
     }
     name = db.Column(db.String(50), nullable=False, unique=True)
     command = db.Column(db.String(50), nullable=False, unique=True)
+    unit = db.Column(db.String(10))
+    graph_unit = db.Column(db.String(15))
+    rate = db.Column(db.Float)
     prefix = db.Column(db.String(50), nullable=False)
     tag = db.Column(db.String(50), nullable=False)
     type = db.Column(db.Enum('physical', 'cloud'), nullable=False)
@@ -250,14 +286,18 @@ class Service(IdMixin, Model):
     @staticmethod
     def init():
         for tag in Service._physical:
-            for name, command, prefix in Service._physical[tag]:
-                s = Service(name=name, command=command, prefix=prefix, tag=tag,
-                            type='physical')
+            for item in Service._physical[tag]:
+                s = Service(name=item['name'], command=item['command'],
+                            prefix='', tag=tag,
+                            unit=item['unit'], graph_unit=item.get('gunit', 'short'),
+                            rate=item['rate'], type='physical')
                 s.save()
         for tag in Service._cloud:
-            for name, command, prefix in Service._cloud[tag]:
-                s = Service(name=name, command=command, prefix=prefix, tag=tag,
-                            type='cloud')
+            for item in Service._cloud[tag]:
+                s = Service(name=item['name'], command=item['command'],
+                            prefix='vm', tag=tag,
+                            unit=item['unit'], graph_unit=item.get('gunit', 'short'),
+                            rate=item['rate'], type='cloud')
                 s.save()
         db.session.flush()
 
@@ -318,6 +358,18 @@ class ServiceMap(Model):
     @property
     def prefix(self):
         return self.service.prefix
+
+    @property
+    def rate(self):
+        return self.service.rate
+
+    @property
+    def unit(self):
+        return self.service.unit
+
+    @property
+    def graph_unit(self):
+        return self.service.graph_unit
 
 
 class MachineService(ServiceMap):

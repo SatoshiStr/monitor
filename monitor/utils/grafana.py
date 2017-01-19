@@ -12,6 +12,7 @@ null = None
 false = False
 true = True
 
+
 def run_command(command):
     if isinstance(command, str) or isinstance(command, unicode):
         command = command.split()
@@ -158,7 +159,7 @@ class Panel(object):
 
 
 class SingleStat(Panel):
-    def __init__(self, title, target, span=3):
+    def __init__(self, title, target, span=3, postfix=''):
         super(SingleStat, self).__init__()
         self._single_stat = {
           "cacheTimeout": null,
@@ -195,7 +196,7 @@ class SingleStat(Panel):
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "postfix": "",
+          "postfix": postfix,
           "postfixFontSize": "50%",
           "prefix": "",
           "prefixFontSize": "50%",
@@ -235,7 +236,7 @@ class SingleStat(Panel):
 
 
 class Graph(Panel):
-    def __init__(self, title, target, span=12):
+    def __init__(self, title, target, span=12, unit='short'):
         super(Graph, self).__init__()
         self._graph = {
           "aliasColors": {},
@@ -287,7 +288,7 @@ class Graph(Panel):
           },
           "yaxes": [
             {
-              "format": "short",
+              "format": unit,
               "label": null,
               "logBase": 1,
               "max": null,
@@ -314,16 +315,17 @@ def create_stat_list(title, machines):
         for service in machine.get_services():
             if machine.type == 'Host':
                 meter = service.command.split('!')[1]
-                target = 'Monitor.host.%s.%s' % (machine.hostname, meter)
+                target = 'scale(Monitor.host.%s.%s, %f)' % \
+                         (machine.hostname, meter, service.rate)
             else:
                 meter = service.command.split('!')[2].replace('.', '_')
-                target = 'Monitor.vm.%s.%s.%s' % (machine.vm_id, local_host,
-                                                  meter)
-            panel = SingleStat(title=meter, target=target, span=2)
+                target = 'scale(Monitor.vm.%s.%s.%s, %f)' % \
+                         (machine.vm_id, local_host, meter, service.rate)
+            panel = SingleStat(title=meter, target=target, span=2,
+                               postfix=service.unit)
             row.add_panel(panel._single_stat)
         dashboard.add_row(row._row)
     result = dashboard.sync()
-    print result
     return result
 
 
@@ -343,37 +345,11 @@ def create_detail_graph(machine):
             meter = service.command.split('!')[2].replace('.', '_')
             target = 'Monitor.vm.%s.%s.%s' % (machine.vm_id, local_host,
                                               meter)
-        panel = Graph(title=meter, target=target, span=6)
+        panel = Graph(title=meter, target=target, span=6,
+                      unit=service.graph_unit)
         row.add_panel(panel._graph)
     dashboard.add_row(row._row)
     return dashboard.sync()
-
-# print init_data_source()
-
-#
-def add_host_list():
-    hosts = ('f', 'gg3', 'guj', 'hadark')
-    configs = []
-    for meter in ('pl', 'rta'):
-        configs.append({
-            'title': meter,
-            'target': 'Monitor.host.%s.' + meter
-        })
-    return create_stat_list('host-list', hosts, configs)
-
-
-def add_host_detail():
-    hostname = 'local'
-    configs = []
-    for meter in ('load_one', 'load_five', 'load_fifteen', 'proc_total',
-                  'swap_free'):
-        configs.append({
-            'title': meter,
-            'target': 'Monitor.host.%s.%s' % (hostname, meter),
-            'span': 6
-        })
-    return create_detail_graph('detail-%s' % hostname, configs)
-
 
 
 def sync_all():

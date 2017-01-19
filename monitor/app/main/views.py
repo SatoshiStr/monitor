@@ -83,6 +83,7 @@ def get_config_detail(host_id):
 @main.route('/sync', methods=['POST'])
 def sync():
     nagios2.sync()
+    print grafana.init_data_source()
     grafana.sync_all()
     flash(u'开始同步配置')
     return '{}'

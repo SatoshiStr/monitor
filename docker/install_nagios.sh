@@ -15,9 +15,9 @@ EOF
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y apache2
-apt-get install -y mysql-server mysql-client
-apt-get install -y php5 php5-mysql libapache2-mod-php5
-apt-get install -y nagios3 nagios-nrpe-plugin
+apt-get install -y --force-yes mysql-server mysql-client
+apt-get install -y --force-yes php5 php5-mysql libapache2-mod-php5
+apt-get install -y --force-yes nagios3 nagios-nrpe-plugin
 
 usermod -a -G nagios www-data
 chmod -R +x /var/lib/nagios3/
