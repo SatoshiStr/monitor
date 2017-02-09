@@ -52,12 +52,12 @@ class Group(IdMixin, Model):
         """
         to_deletes = []
         for machine in self.machines:
-            if len(machine.groups) == 1 and machine.groups[0].id == self.id:
+            if len(machine.groups) == 1:
                 to_deletes.append(machine)
+            else:
+                machine.groups.remove(self)
         for machine in to_deletes:
             machine.delete()
-        for gm_map in GroupMachineMap.query.filter_by(group_id=self.id).all():
-            gm_map.delete()
         db.session.delete(self)
 
     def add_machine(self, machine):
@@ -69,14 +69,14 @@ class Group(IdMixin, Model):
         self.save()
 
     def add_service(self, service_id, warn=None, critic=None):
-        service = GroupService(service_id=service_id, warn=warn, critic=critic)
+        service = GroupService(group_id=self.id, service_id=service_id,
+                               warn=warn, critic=critic)
         service.save()
-        self.services.append(service)
-        self.save()
 
     def remove_service(self, service_id):
         service = GroupService.query.\
             filter_by(group_id=self.id, service_id=service_id).first()
+        self.services.remove(service)
         service.delete()
 
 
@@ -111,11 +111,6 @@ class Machine(IdMixin, Model):
         vm.save()
         return vm
 
-    def delete(self):
-        """删除主机和主机的服务
-        """
-        db.session.delete(self)
-
     def is_monitor_host(self):
         if self.ip in current_app.config['LOCAL_IPS']:
             return True
@@ -145,16 +140,14 @@ class Machine(IdMixin, Model):
         return hosts
 
     def add_service(self, service_id, warn=None, critic=None):
-        service = MachineService(service_id=service_id, warn=warn,
-                                 critic=critic)
+        service = MachineService(machine_id=self.id, service_id=service_id,
+                                 warn=warn, critic=critic)
         service.save()
-        self.services.append(service)
-        self.save()
 
     def remove_service(self, service_id):
         service = MachineService.query. \
             filter_by(machine_id=self.id, service_id=service_id).first()
-        service.delete()
+        self.services.remove(service)
 
     def get_services(self, source=None):
         if self.groups:
@@ -186,7 +179,6 @@ def update_service(self, services):
 
 Group.update_service = update_service
 Machine.update_service = update_service
-
 
 
 class GroupMachineMap(Model):
