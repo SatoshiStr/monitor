@@ -1,7 +1,7 @@
 # coding=utf-8
 import logging
 from sqlalchemy import or_
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, flash, redirect, url_for, request, jsonify, abort
 from utils import nagios2, ansible, grafana
 from app.models import Machine, Service, Group
 from . import main
@@ -75,6 +75,8 @@ def config_host(host_id):
 @main.route('/host/<int:host_id>/config-detail', methods=['GET'])
 def get_config_detail(host_id):
     host = Machine.query.get_or_404(host_id)
+    if not host.latest_task_name:
+        abort(404)
     with open(ansible.TASK_DIR+'/'+host.latest_task_name) as f:
         content = f.read().encode('utf-8')
     return jsonify({'stdout': content})
