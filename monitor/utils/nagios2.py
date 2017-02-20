@@ -23,7 +23,6 @@ COMMAND_CONFIG_FILE = config.NAGIOS_COMMAND_CONFIG_FILE
 
 LOG = logging.getLogger(__name__)
 
-sync_running = False
 
 
 def sync():
@@ -37,10 +36,6 @@ class NagiosSync(threading.Thread):
         super(NagiosSync, self).__init__()
 
     def run(self):
-        global sync_running
-        while sync_running:
-            time.sleep(0.1)
-        sync_running = True
         # synchronize config
         # clear file
         clear_file(HOST_CONFIG_FILE)
