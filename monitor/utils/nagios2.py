@@ -144,7 +144,8 @@ def add_config(name, config, file_name):
             value = value.decode('utf-8')
         temp_str = key+value
         if ' ' in temp_str or '\t' in temp_str:
-            raise ValueError('key or value should not contain white space')
+            raise ValueError('key or value should not contain white space.'
+                             ' [%s] [%s]' % (key, value))
         content.append(u'%s   %s' % (key, value))
     result = config_template % {'name': name, 'content': u'\n    '.join(content)}
     with open(file_name, 'a') as f:
