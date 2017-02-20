@@ -1,0 +1,1 @@
+/usr/lib/nagios/plugins/check_ganglia -h 10.10.1.82 -m proc_run -w -1 -c -1
