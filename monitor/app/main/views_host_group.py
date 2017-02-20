@@ -118,7 +118,7 @@ def change_group_service(group_id):
 def config_host_group(group_id):
     group = Group.query.get_or_404(group_id)
     task_name = ansible.deploy(group.machines)
-    for host in group.hosts:
+    for host in group.machines:
         host.latest_task_name = task_name
         host.state = u'配置中'
         host.save()
